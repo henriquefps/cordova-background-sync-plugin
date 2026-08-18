@@ -1,0 +1,39 @@
+# OS Metadata
+.DS_Store
+Thumbs.db
+*.tmp
+*.bak
+
+# Node / Dependency Management
+node_modules/
+package-lock.json
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Android Build & IDE files
+.gradle/
+build/
+local.properties
+*.apk
+*.aar
+*.keystore
+.idea/
+*.iml
+
+# iOS / Xcode build and user settings
+*.xcworkspace/
+*.xcodeproj/
+xcuserdata/
+*.mode1v3
+*.mode2v3
+*.perspectivev3
+DerivedData/
+
+# Testing and local DB buffers
+*.db
+*.db-journal
+*.log
+
+# Crashlytics & diagnostic reports
+*.crash

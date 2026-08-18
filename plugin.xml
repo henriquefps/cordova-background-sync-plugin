@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plugin xmlns="http://apache.org/cordova/ns/plugins/1.0"
+    id="cordova-background-sync-plugin"
+    version="1.0.0"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <name>BackgroundSyncPlugin</name>
+    <description>High-performance local SQLite storage background synchronization engine for hybrid mobile apps</description>
+    <author>Henrique Silva</author>
+
+    <engines>
+        <engine name="cordova" version=">=1.7.0" />
+        <engine name="cordova-android" version=">=1.8.0" />
+        <engine name="cordova-ios" version=">=1.8.0" />
+    </engines>
+
+    <js-module src="www/BackgroundSyncPlugin.js" name="BackgroundSyncPlugin">
+        <clobbers target="cordova.plugins.BackgroundSyncPlugin" />
+    </js-module>
+
+    <!-- Android Platform Configuration -->
+    <platform name="android">
+        <source-file src="src/android/BackgroundSyncPlugin.kt" target-dir="src/main/kotlin/com/hfps/backgroundsync"/>
+        <source-file src="src/android/SyncWorker.kt" target-dir="src/main/kotlin/com/hfps/backgroundsync"/>
+        <source-file src="src/android/DatabaseHelper.kt" target-dir="src/main/kotlin/com/hfps/backgroundsync"/>
+        <source-file src="src/android/DatabaseInspectorActivity.kt" target-dir="src/main/kotlin/com/hfps/backgroundsync"/>
+        <resource-file src="www/inspector/inspector.html" target="assets/inspector.html" />
+
+        <config-file parent="/*" target="res/xml/config.xml">
+            <feature name="BackgroundSyncPlugin">
+                <param name="android-package" value="com.hfps.backgroundsync.BackgroundSyncPlugin"/>
+            </feature>
+            <preference name="GradlePluginKotlinEnabled" value="true" />
+            <preference name="GradlePluginKotlinCodeStyle" value="official" />
+            <preference name="GradlePluginKotlinVersion" value="1.9.22" />
+            <preference name="AndroidXEnabled" value="true"/>
+        </config-file>
+
+        <config-file target="AndroidManifest.xml" parent="/manifest" xmlns:android="http://schemas.android.com/apk/res/android">
+            <uses-permission android:name="android.permission.INTERNET"/>
+            <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+            <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+            <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+            <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC"/>
+            <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+        </config-file>
+
+        <config-file target="AndroidManifest.xml" parent="/manifest/application" xmlns:android="http://schemas.android.com/apk/res/android">
+            <service
+                android:name="androidx.work.impl.foreground.SystemForegroundService"
+                android:foregroundServiceType="dataSync"
+                android:exported="false"
+                xmlns:tools="http://schemas.android.com/tools"
+                tools:node="merge" />
+            <activity
+                android:name="com.hfps.backgroundsync.DatabaseInspectorActivity"
+                android:exported="false"
+                android:label="Database Inspector" />
+        </config-file>
+
+        <framework src="src/android/build.gradle" custom="true" type="gradleReference"/>
+    </platform>
+
+    <!-- iOS Platform Configuration -->
+    <platform name="ios">
+        <config-file target="config.xml" parent="/*">
+            <feature name="BackgroundSyncPlugin">
+                <param name="ios-package" value="BackgroundSyncPlugin"/>
+            </feature>
+        </config-file>
+
+        <config-file target="*-Info.plist" parent="UIBackgroundModes">
+            <array>
+                <string>fetch</string>
+                <string>processing</string>
+            </array>
+        </config-file>
+
+        <config-file target="*-Info.plist" parent="NSLocalNetworkUsageDescription">
+            <string>This app needs network access to synchronize background data and assets to the server.</string>
+        </config-file>
+
+        <source-file src="src/ios/BackgroundSyncPlugin.m" />
+        <header-file src="src/ios/BackgroundSyncPlugin.h" />
+        <source-file src="src/ios/DatabaseInspectorViewController.m" />
+        <header-file src="src/ios/DatabaseInspectorViewController.h" />
+        <resource-file src="www/inspector/inspector.html" />
+        <framework src="SQLCipher" type="podspec" spec="~> 4.0" />
+    </platform>
+</plugin>

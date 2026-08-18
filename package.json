@@ -1,0 +1,34 @@
+{
+  "name": "cordova-background-sync-plugin",
+  "version": "1.0.0",
+  "cordova_name": "BackgroundSyncPlugin",
+  "description": "High-performance local SQLite storage background synchronization engine for hybrid mobile apps",
+  "author": "Henrique Silva <contact@hfps.dev> (https://hfps.dev)",
+  "license": "Apache 2.0 License",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/henriquefps/cordova-background-sync-plugin.git"
+  },
+  "bugs": {
+    "url": "https://github.com/henriquefps/cordova-background-sync-plugin/issues"
+  },
+  "homepage": "https://github.com/henriquefps/cordova-background-sync-plugin#readme",
+  "cordova": {
+    "id": "cordova-background-sync-plugin",
+    "platforms": [
+      "android",
+      "ios"
+    ]
+  },
+  "keywords": [
+    "cordova",
+    "hfps",
+    "background",
+    "sync",
+    "sqlite",
+    "localstorage",
+    "offline-first",
+    "workmanager",
+    "nsurlsession"
+  ]
+}

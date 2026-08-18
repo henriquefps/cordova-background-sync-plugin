@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Database Inspector</title>
+<style>
+  :root {
+    --bg: #f3f4f6;
+    --card-bg: #ffffff;
+    --text: #1f2937;
+    --text-muted: #6b7280;
+    --border: #e5e7eb;
+    --primary: #4f46e5;
+    --danger: #ef4444;
+    --danger-bg: #fee2e2;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --warning-bg: #fef3c7;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    -webkit-tap-highlight-color: transparent;
+  }
+  header {
+    background: var(--card-bg);
+    border-bottom: 1px solid var(--border);
+    padding: 0.9rem 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  header h1 {
+    font-size: 1.05rem;
+    margin: 0;
+  }
+  .btn {
+    font-family: inherit;
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: 0.5rem 0.9rem;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+  }
+  .btn-primary { background: var(--primary); color: #fff; }
+  .btn-secondary { background: #e5e7eb; color: var(--text); }
+  .btn-danger { background: var(--danger-bg); color: var(--danger); }
+  .btn-small { font-size: 0.75rem; padding: 0.3rem 0.6rem; border-radius: 6px; }
+  .tabs {
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem 0;
+    background: var(--card-bg);
+    border-bottom: 1px solid var(--border);
+  }
+  .tab {
+    padding: 0.6rem 1rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+  }
+  .tab.active {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+  }
+  main {
+    padding: 1rem;
+  }
+  .panel { display: none; }
+  .panel.active { display: block; }
+  .toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+  .toolbar .count {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+  }
+  .table-wrapper {
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--card-bg);
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8rem;
+  }
+  th, td {
+    padding: 0.6rem 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  th {
+    background: #f9fafb;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  tr:last-child td { border-bottom: none; }
+  td.mono {
+    font-family: ui-monospace, 'SF Mono', Consolas, monospace;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+  }
+  td.wrap-cell {
+    max-width: 260px;
+    overflow-wrap: break-word;
+    word-break: break-all;
+  }
+  td.wrap-cell pre {
+    margin: 0;
+    max-height: 90px;
+    overflow: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+    font-family: ui-monospace, 'SF Mono', Consolas, monospace;
+    font-size: 0.72rem;
+  }
+  .badge {
+    display: inline-block;
+    padding: 0.2rem 0.55rem;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+  .badge.pending { background: var(--warning-bg); color: #d97706; }
+  .badge.failed { background: var(--danger-bg); color: var(--danger); }
+  .badge.completed { background: #d1fae5; color: var(--success); }
+  .badge.unknown { background: #e5e7eb; color: var(--text-muted); }
+  .empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+  }
+  .error-banner {
+    background: var(--danger-bg);
+    color: var(--danger);
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    margin-bottom: 0.75rem;
+  }
+  .loading {
+    padding: 2rem;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Database Inspector</h1>
+  <div style="display:flex; gap:0.5rem;">
+    <button class="btn btn-primary" id="exportBtn">Export All (JSON)</button>
+    <button class="btn btn-secondary" id="closeBtn">Close</button>
+  </div>
+</header>
+
+<div class="tabs">
+  <div class="tab active" data-tab="sync">Sync Queue (Uploads)</div>
+  <div class="tab" data-tab="download">Download Queue</div>
+</div>
+
+<main>
+  <div id="errorBanner" class="error-banner" style="display:none;"></div>
+
+  <div class="panel active" id="panel-sync">
+    <div class="toolbar">
+      <span class="count" id="syncCount"></span>
+      <button class="btn btn-secondary btn-small" id="refreshSyncBtn">Refresh</button>
+    </div>
+    <div id="syncContent" class="loading">Loading...</div>
+  </div>
+
+  <div class="panel" id="panel-download">
+    <div class="toolbar">
+      <span class="count" id="downloadCount"></span>
+      <button class="btn btn-secondary btn-small" id="refreshDownloadBtn">Refresh</button>
+    </div>
+    <div id="downloadContent" class="loading">Loading...</div>
+  </div>
+</main>
+
+<script>
+(function () {
+  'use strict';
+
+  // ---- Native bridge adapter --------------------------------------------
+  // Android exposes a single synchronous entry point: AndroidInspectorBridge.invoke(action, argsJson).
+  // iOS exposes an async postMessage handler; the native side resolves by calling
+  // window.__inspectorResolve(callId, jsonString) back into this page.
+  var Bridge = (function () {
+    var isAndroid = !!window.AndroidInspectorBridge;
+    var isIOS = !!(window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.inspectorBridge);
+    var callId = 0;
+    var pending = {};
+
+    window.__inspectorResolve = function (id, jsonString) {
+      var entry = pending[id];
+      if (!entry) return;
+      delete pending[id];
+      try {
+        entry.resolve(JSON.parse(jsonString));
+      } catch (e) {
+        entry.reject(e);
+      }
+    };
+
+    function callIOS(action, argsObj) {
+      return new Promise(function (resolve, reject) {
+        var id = ++callId;
+        pending[id] = { resolve: resolve, reject: reject };
+        window.webkit.messageHandlers.inspectorBridge.postMessage({ callId: id, action: action, args: argsObj || {} });
+      });
+    }
+
+    function callAndroid(action, argsObj) {
+      return new Promise(function (resolve, reject) {
+        try {
+          var raw = window.AndroidInspectorBridge.invoke(action, JSON.stringify(argsObj || {}));
+          resolve(JSON.parse(raw));
+        } catch (e) {
+          reject(e);
+        }
+      });
+    }
+
+    function call(action, argsObj) {
+      if (isAndroid) return callAndroid(action, argsObj);
+      if (isIOS) return callIOS(action, argsObj);
+      return Promise.reject(new Error('No native inspector bridge is available in this context.'));
+    }
+
+    return {
+      getSyncQueue: function () { return call('getSyncQueue'); },
+      getDownloadQueue: function () { return call('getDownloadQueue'); },
+      deleteSyncRecord: function (id) { return call('deleteSyncRecord', { id: id }); },
+      deleteDownloadRecord: function (id) { return call('deleteDownloadRecord', { id: id }); },
+      exportAll: function () { return call('exportAll'); },
+      close: function () { return call('close'); }
+    };
+  })();
+
+  // ---- Helpers ------------------------------------------------------------
+  function esc(value) {
+    if (value === null || value === undefined) return '';
+    return String(value)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  // window.confirm()/alert() require native WKUIDelegate (iOS) / WebChromeClient (Android)
+  // wiring that this inspector's host views don't provide, so they silently no-op instead of
+  // showing a dialog. This in-page modal works identically on both platforms without it.
+  function showConfirm(message) {
+    return new Promise(function (resolve) {
+      var overlay = document.createElement('div');
+      overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;z-index:1000;padding:1rem;';
+
+      var box = document.createElement('div');
+      box.style.cssText = 'background:#fff;border-radius:12px;padding:1.25rem;max-width:320px;width:100%;box-shadow:0 10px 25px rgba(0,0,0,0.25);';
+
+      var text = document.createElement('p');
+      text.style.cssText = 'margin:0 0 1rem;font-size:0.9rem;color:#1f2937;line-height:1.4;';
+      text.textContent = message;
+
+      var actions = document.createElement('div');
+      actions.style.cssText = 'display:flex;justify-content:flex-end;gap:0.5rem;';
+
+      var cancelBtn = document.createElement('button');
+      cancelBtn.className = 'btn btn-secondary btn-small';
+      cancelBtn.textContent = 'Cancel';
+
+      var confirmBtn = document.createElement('button');
+      confirmBtn.className = 'btn btn-danger btn-small';
+      confirmBtn.textContent = 'Delete';
+
+      actions.appendChild(cancelBtn);
+      actions.appendChild(confirmBtn);
+      box.appendChild(text);
+      box.appendChild(actions);
+      overlay.appendChild(box);
+      document.body.appendChild(overlay);
+
+      function cleanup(result) {
+        document.body.removeChild(overlay);
+        resolve(result);
+      }
+      cancelBtn.addEventListener('click', function () { cleanup(false); });
+      confirmBtn.addEventListener('click', function () { cleanup(true); });
+      overlay.addEventListener('click', function (e) { if (e.target === overlay) cleanup(false); });
+    });
+  }
+
+  function statusBadge(status) {
+    var normalized = (status || '').toLowerCase();
+    var cls = ['pending', 'failed', 'completed'].indexOf(normalized) >= 0 ? normalized : 'unknown';
+    return '<span class="badge ' + cls + '">' + esc(status || 'unknown') + '</span>';
+  }
+
+  function showError(message) {
+    var banner = document.getElementById('errorBanner');
+    banner.textContent = message;
+    banner.style.display = message ? 'block' : 'none';
+  }
+
+  // ---- Sync Queue rendering -------------------------------------------
+  function renderSyncQueue(rows) {
+    document.getElementById('syncCount').textContent = rows.length + ' record(s)';
+    if (rows.length === 0) {
+      document.getElementById('syncContent').innerHTML = '<div class="empty-state">Sync queue is empty.</div>';
+      return;
+    }
+    var html = '<div class="table-wrapper"><table><thead><tr>' +
+      '<th>Seq</th><th>Id</th><th>Status</th><th>Endpoint</th><th>Strategy</th><th>FilePath</th><th>Payload</th><th>Error</th><th></th>' +
+      '</tr></thead><tbody>';
+    rows.forEach(function (row) {
+      html += '<tr>' +
+        '<td class="mono">' + esc(row.Sequence) + '</td>' +
+        '<td class="mono">' + esc(row.Id) + '</td>' +
+        '<td>' + statusBadge(row.Status) + '</td>' +
+        '<td class="wrap-cell">' + esc(row.Endpoint) + '</td>' +
+        '<td>' + esc(row.UploadStrategy) + '</td>' +
+        '<td class="wrap-cell">' + esc(row.FilePath) + '</td>' +
+        '<td class="wrap-cell"><pre>' + esc(row.Payload) + '</pre></td>' +
+        '<td class="wrap-cell">' + esc(row.Error) + '</td>' +
+        '<td><button class="btn btn-danger btn-small" data-delete-sync="' + esc(row.Id) + '">Delete</button></td>' +
+        '</tr>';
+    });
+    html += '</tbody></table></div>';
+    document.getElementById('syncContent').innerHTML = html;
+
+    Array.prototype.forEach.call(document.querySelectorAll('[data-delete-sync]'), function (btn) {
+      btn.addEventListener('click', function () {
+        var id = btn.getAttribute('data-delete-sync');
+        showConfirm('Delete sync_queue record ' + id + '? This cannot be undone.').then(function (confirmed) {
+          if (!confirmed) return;
+          return Bridge.deleteSyncRecord(id).then(loadSyncQueue);
+        }).catch(function (e) {
+          showError('Failed to delete record: ' + (e && e.message ? e.message : e));
+        });
+      });
+    });
+  }
+
+  function loadSyncQueue() {
+    document.getElementById('syncContent').innerHTML = '<div class="loading">Loading...</div>';
+    Bridge.getSyncQueue().then(function (rows) {
+      showError('');
+      renderSyncQueue(Array.isArray(rows) ? rows : []);
+    }).catch(function (e) {
+      showError('Failed to load sync queue: ' + (e && e.message ? e.message : e));
+      document.getElementById('syncContent').innerHTML = '';
+    });
+  }
+
+  // ---- Download Queue rendering -----------------------------------------
+  function renderDownloadQueue(rows) {
+    document.getElementById('downloadCount').textContent = rows.length + ' record(s)';
+    if (rows.length === 0) {
+      document.getElementById('downloadContent').innerHTML = '<div class="empty-state">Download queue is empty.</div>';
+      return;
+    }
+    var html = '<div class="table-wrapper"><table><thead><tr>' +
+      '<th>Seq</th><th>Id</th><th>Status</th><th>Endpoint</th><th>Strategy</th><th>FilePath</th><th>ResponseData</th><th>Error</th><th></th>' +
+      '</tr></thead><tbody>';
+    rows.forEach(function (row) {
+      html += '<tr>' +
+        '<td class="mono">' + esc(row.Sequence) + '</td>' +
+        '<td class="mono">' + esc(row.Id) + '</td>' +
+        '<td>' + statusBadge(row.Status) + '</td>' +
+        '<td class="wrap-cell">' + esc(row.Endpoint) + '</td>' +
+        '<td>' + esc(row.DownloadStrategy) + '</td>' +
+        '<td class="wrap-cell">' + esc(row.FilePath) + '</td>' +
+        '<td class="wrap-cell"><pre>' + esc(row.ResponseData) + '</pre></td>' +
+        '<td class="wrap-cell">' + esc(row.Error) + '</td>' +
+        '<td><button class="btn btn-danger btn-small" data-delete-download="' + esc(row.Id) + '">Delete</button></td>' +
+        '</tr>';
+    });
+    html += '</tbody></table></div>';
+    document.getElementById('downloadContent').innerHTML = html;
+
+    Array.prototype.forEach.call(document.querySelectorAll('[data-delete-download]'), function (btn) {
+      btn.addEventListener('click', function () {
+        var id = btn.getAttribute('data-delete-download');
+        showConfirm('Delete download_queue record ' + id + '? This cannot be undone.').then(function (confirmed) {
+          if (!confirmed) return;
+          return Bridge.deleteDownloadRecord(id).then(loadDownloadQueue);
+        }).catch(function (e) {
+          showError('Failed to delete record: ' + (e && e.message ? e.message : e));
+        });
+      });
+    });
+  }
+
+  function loadDownloadQueue() {
+    document.getElementById('downloadContent').innerHTML = '<div class="loading">Loading...</div>';
+    Bridge.getDownloadQueue().then(function (rows) {
+      showError('');
+      renderDownloadQueue(Array.isArray(rows) ? rows : []);
+    }).catch(function (e) {
+      showError('Failed to load download queue: ' + (e && e.message ? e.message : e));
+      document.getElementById('downloadContent').innerHTML = '';
+    });
+  }
+
+  // ---- Tabs ---------------------------------------------------------------
+  Array.prototype.forEach.call(document.querySelectorAll('.tab'), function (tab) {
+    tab.addEventListener('click', function () {
+      var target = tab.getAttribute('data-tab');
+      Array.prototype.forEach.call(document.querySelectorAll('.tab'), function (t) { t.classList.remove('active'); });
+      Array.prototype.forEach.call(document.querySelectorAll('.panel'), function (p) { p.classList.remove('active'); });
+      tab.classList.add('active');
+      document.getElementById('panel-' + target).classList.add('active');
+    });
+  });
+
+  // ---- Toolbar actions ----------------------------------------------------
+  document.getElementById('refreshSyncBtn').addEventListener('click', loadSyncQueue);
+  document.getElementById('refreshDownloadBtn').addEventListener('click', loadDownloadQueue);
+  document.getElementById('closeBtn').addEventListener('click', function () {
+    Bridge.close().catch(function () { /* no-op: native side closes the screen regardless */ });
+  });
+  document.getElementById('exportBtn').addEventListener('click', function () {
+    showError('');
+    Bridge.exportAll().catch(function (e) {
+      showError('Export failed: ' + (e && e.message ? e.message : e));
+    });
+  });
+
+  // ---- Initial load ---------------------------------------------------------
+  loadSyncQueue();
+  loadDownloadQueue();
+})();
+</script>
+
+</body>
+</html>
