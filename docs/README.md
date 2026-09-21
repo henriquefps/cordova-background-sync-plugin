@@ -75,10 +75,10 @@ sequenceDiagram
         end
         Backend-->>Worker: HTTP 200 OK
         Worker->>DB: UPDATE status = 'completed'
-        Worker-->>App: onProgress event (if app is in foreground)
+        Worker-->>App: onStarted / onProgress event (if app is in foreground)
     end
 
-    Worker-->>App: onCompleted event
+    Note over Worker: Upload queue drained.<br/>Worker moves on to download_queue<br/>(see diagram below) BEFORE firing onCompleted.
 ```
 
 **Key points:**
@@ -87,6 +87,7 @@ sequenceDiagram
 - Auth is passed via global `headers` set during `initialize()` (Bearer token, API key, etc.).
 - `PRESIGNED_URL` strategy offloads binary uploads directly to object storage (S3, GCS, Azure Blob) without routing through your OutSystems server.
 - The worker updates `status` → `completed` or `failed` per record, enabling partial recovery.
+- `onFailed` (not pictured) fires instead of the loop continuing if a record fails with a non-transient error, or if `cancelSync()` is called mid-run.
 
 ---
 
@@ -105,6 +106,8 @@ sequenceDiagram
     App->>Worker: sync() — schedule native background task
     Note over Worker: Same worker/task as the upload engine.<br/>Processes sync_queue first, then download_queue,<br/>in a single run. Survives app suspension.
 
+    Worker-->>App: onStarted_download event (if app is in foreground)
+
     loop For each pending download (sequential)
         Worker->>DB: Read next pending download
         alt downloadStrategy = REST_PAYLOAD
@@ -118,11 +121,14 @@ sequenceDiagram
             Worker->>DB: Store local file path in ResponseData
         end
         Worker->>DB: UPDATE status = 'completed'
+        Worker-->>App: onProgress_download event (if app is in foreground)
     end
+
+    Worker-->>App: onCompleted event (SHARED — covers this run's uploads + downloads together)
 
     App->>DB: getCompletedDownloads()
     DB-->>App: [{ id, responseData, filePath }]
-    Note over DB: If autoDeleteCompleted = true,<br/>records are deleted after retrieval.
+    Note over DB: If autoDeleteCompleted = true,<br/>records are deleted after retrieval.<br/>This flag has NO effect on sync_queue (uploads) —<br/>see cancel-sync.md.
     App->>App: Parse JSON delta / reference local file path
 ```
 
@@ -132,7 +138,9 @@ sequenceDiagram
 - `download_queue` table stores each pending download with its `endpoint`, `downloadStrategy` (`REST_PAYLOAD` or `BINARY_FILE`), and optional target `filePath`.
 - `REST_PAYLOAD` downloads store the full JSON response body in `ResponseData` for the app to parse later.
 - `BINARY_FILE` downloads stream the content directly to a sandboxed device path — ideal for images, PDFs, and video.
-- The app calls `getCompletedDownloads()` to consume results. If `autoDeleteCompleted` is `true`, records are atomically deleted after being returned — following a queue consumption pattern.
+- `onFailed_download` (not pictured) fires instead of the loop continuing on a non-transient error or `cancelSync()`, mirroring the upload loop.
+- **`onCompleted` fires once per `sync()` run, after BOTH queues are drained** — not once per queue. There is no `onCompleted_download`. Full event reference: [Integration Guide → Register Progress Listeners](integration-guide.md#step-2-register-progress-listeners).
+- The app calls `getCompletedDownloads()` to consume results. If `autoDeleteCompleted` is `true`, records are atomically deleted after being returned, and any `offset` passed in is ignored (always reads from the front of what's left) — **this only applies to `download_queue`**; completed uploads (`getSyncedRecords`) are never auto-deleted, see [cancel-sync.md](cancel-sync.md#step-1-managing-completed-uploads).
 - Auth headers configured in `initialize()` are automatically forwarded on every download request.
 
 ---

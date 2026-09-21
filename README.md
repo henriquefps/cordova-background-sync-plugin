@@ -45,7 +45,7 @@ All methods are exposed under `cordova.plugins.BackgroundSyncPlugin` (also `wind
 | `sync(success, error)` / `enqueueSync(success, error)` | Schedules a single native background run that drains `sync_queue` (uploads) and then `download_queue` (downloads). Both names trigger the same action. |
 | `cancelSync(success, error)` | Cancels the currently scheduled/running sync task. Records already completed remain completed; pending/failed records are left untouched. |
 | `requestNotificationsPermission(success, error)` | Requests the runtime `POST_NOTIFICATIONS` permission (Android 13+ only; resolves immediately on other versions/iOS). |
-| `registerListeners(listeners)` | Registers an object with `onStarted`, `onProgress`, `onCompleted`, `onFailed` (and their `_download` counterparts, e.g. `onStarted_download`) callbacks for real-time sync events. |
+| `registerListeners(listeners)` | Registers an object with 7 real-time sync callbacks: `onStarted`/`onProgress`/`onFailed` (upload), `onStarted_download`/`onProgress_download`/`onFailed_download` (download), and a single shared `onCompleted` that fires once after both queues finish — **there is no `onCompleted_download`**. Full payload reference: [Integration Guide → Register Progress Listeners](docs/integration-guide.md#step-2-register-progress-listeners). |
 | `onProgress(callback)` | Legacy shorthand that registers only a progress callback (internally calls `registerListeners`). |
 | `executeRawQuery(query, args, success, error)` | Runs a raw SQL statement against the plugin's private `bg_sync.db` (`SELECT`/`PRAGMA` return rows; other statements execute directly). |
 | `enqueueRecord(record, success, error)` | Adds a record (`id?`, `payload`, `endpoint`, `filePath?`, `uploadStrategy?`) to `sync_queue`. |
@@ -55,7 +55,7 @@ All methods are exposed under `cordova.plugins.BackgroundSyncPlugin` (also `wind
 | `clearQueue(success, error)` | Deletes all rows from `sync_queue`. |
 | `enqueueDownload(record, success, error)` | Adds a record (`id?`, `payload?`, `endpoint`, `filePath?`, `downloadStrategy?`) to `download_queue`. |
 | `getQueuedDownloads(success, error)` | Returns pending/failed download records: `[{ id, status, error }]`. |
-| `getCompletedDownloads([options], success, error)` | Returns `{ records: [...], hasMore }` for completed downloads. Optional `{ limit, offset }` enables pagination. If `autoDeleteCompleted` is `true`, returned records are deleted from the queue. |
+| `getCompletedDownloads([options], success, error)` | Returns `{ records: [...], hasMore }` for completed downloads. Optional `{ limit, offset }` enables pagination. If `autoDeleteCompleted` is `true`, returned records are deleted from the queue (**downloads only** — `getSyncedRecords` below is never affected by this flag) and any `offset` you pass is ignored server-side; see [Background Downloads Guide → Fetch Completed Downloads](docs/background-downloads.md#3-fetch-completed-downloads-access-json-results) for the correct pagination loop in each case. |
 | `removeDownloads(ids, success, error)` | Deletes specific download records by `id`. |
 | `clearDownloadQueue(success, error)` | Deletes all rows from `download_queue`. |
 | `openDatabaseInspector(success, error)` | Opens a native full-screen recovery/inspection UI (WKWebView on iOS, WebView on Android) over the plugin's private database — browse both queues, delete stuck records, and export everything as JSON. Intended for manual recovery/debugging, not end-user-facing production flows. |

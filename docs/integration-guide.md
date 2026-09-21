@@ -50,7 +50,7 @@ if (syncEngine) {
             syncOnlyOnWifi: false,                     // Android: require Wi-Fi
             syncOnlyWhenCharging: false,               // Android: require charger
             enableNotifications: true,                 // Show native progress notifications
-            autoDeleteCompleted: true,                // Automatically delete synced records
+            autoDeleteCompleted: true,                // Auto-deletes completed DOWNLOADS only — see note below
             encryptDatabase: true,                     // Enable SQLCipher encryption (Keystore/Keychain)
             headers: {
                 "Authorization": "Bearer eyJhbGciOi...",
@@ -77,28 +77,56 @@ if (syncEngine) {
 }
 ```
 
+> [!NOTE]
+> **`autoDeleteCompleted` only affects `download_queue`.** When `true`, `getCompletedDownloads()` deletes each record it returns (see [Background Downloads Guide](background-downloads.md)). It has **no effect on `sync_queue`** — completed uploads always persist until you explicitly call `removeRecords()`, regardless of this setting. See [Manually Cancelling Synchronization → Managing Completed Uploads](cancel-sync.md#step-1-managing-completed-uploads) for the cleanup pattern this implies.
+
 ---
 
 ## Step 2: Register Progress Listeners
 
-Register event listeners to track the real-time background progress when the application is active in the foreground:
+Register event listeners to track the real-time background progress when the application is active in the foreground. There are **7 events** in total — 3 for the upload cycle, 3 for the download cycle, and one shared `onCompleted` that fires once at the very end of the **combined** run (uploads, then downloads):
+
+| Event | Fires when | Payload |
+| :--- | :--- | :--- |
+| `onStarted` | The upload queue starts processing | `{ event, totalCount }` |
+| `onProgress` | Periodically during upload | `{ event, percentage, completedCount, totalCount }` |
+| `onFailed` | Upload sync suspended (network drop or `cancelSync()`) | `{ event, percentage, completedCount, totalCount, error }` |
+| `onStarted_download` | The download queue starts processing | `{ event, totalCount }` |
+| `onProgress_download` | Periodically during download | `{ event, percentage, completedCount, totalCount }` |
+| `onFailed_download` | Download sync suspended | `{ event, percentage, completedCount, totalCount, error }` |
+| `onCompleted` | **Once**, after the entire run finishes (uploads *and* downloads) | `{ event, percentage, completedCount, totalCount }` |
+
+> [!IMPORTANT]
+> There is **no `onCompleted_download`**. Unlike the other three, `onCompleted` is not split per direction — it fires exactly once per `sync()` run, after both queues have been drained, with `completedCount`/`totalCount` covering uploads and downloads combined. Don't wait for a separate "downloads finished" signal; it doesn't exist.
 
 ```javascript
 function registerProgressListeners() {
     syncEngine.registerListeners({
+        // Upload cycle
         onStarted: (data) => {
-            console.log(`Sync started. Total records: ${data.totalCount}`);
+            console.log(`Upload sync started. Total records: ${data.totalCount}`);
         },
         onProgress: (progress) => {
-            console.log(`Progress: ${progress.percentage}% (${progress.completedCount}/${progress.totalCount})`);
+            console.log(`Upload progress: ${progress.percentage}% (${progress.completedCount}/${progress.totalCount})`);
             loadSyncQueueStatus(); // Refresh UI list
         },
-        onCompleted: (data) => {
-            console.log(`Sync complete! Uploaded ${data.completedCount} items.`);
+        onFailed: (data) => {
+            console.error("Upload sync suspended:", data.error);
             loadSyncQueueStatus();
         },
-        onFailed: (data) => {
-            console.error("Sync suspended:", data.error);
+        // Download cycle
+        onStarted_download: (data) => {
+            console.log(`Download sync started. Total records: ${data.totalCount}`);
+        },
+        onProgress_download: (progress) => {
+            console.log(`Download progress: ${progress.percentage}% (${progress.completedCount}/${progress.totalCount})`);
+        },
+        onFailed_download: (data) => {
+            console.error("Download sync suspended:", data.error);
+        },
+        // Combined — fires once, after both queues are drained
+        onCompleted: (data) => {
+            console.log(`Sync run complete! ${data.completedCount} total items processed.`);
             loadSyncQueueStatus();
         }
     });

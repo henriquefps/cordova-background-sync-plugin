@@ -69,8 +69,8 @@ syncEngine.registerListeners({
 
 After cancelling, the remaining items in the queue are still in their previous state (e.g. `pending` or `failed`) in the private database. You can restart the synchronization cycle at any time.
 
-### Step 1: Manage Completed Items (If autoDeleteCompleted is False)
-If `autoDeleteCompleted` was set to `false` during initialization, completed records will persist in the private SQLite database. You should query them using `getSyncedRecords()` and remove them using `removeRecords()` to keep the queue clean:
+### Step 1: Managing Completed Uploads
+`autoDeleteCompleted` only affects `download_queue` (see [Integration Guide](integration-guide.md#step-1-initialize-the-sync-engine)) — completed upload records in `sync_queue` **always** persist in the private SQLite database, regardless of that setting. You should query them using `getSyncedRecords()` and remove them using `removeRecords()` to keep the queue clean:
 
 ```javascript
 function cleanSyncedRecords() {

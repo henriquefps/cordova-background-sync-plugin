@@ -77,7 +77,31 @@ syncEngine.sync(
 > [!NOTE]
 > There is no separate `syncDownloads()` method. A single `sync()` call schedules one native background run that drains `sync_queue` (uploads) first and then `download_queue` (downloads).
 
-### 2. Fetch Queued Downloads
+### 2. Listen for Real-Time Download Progress
+
+The download cycle has its own 3 events — `onStarted_download`, `onProgress_download`, `onFailed_download` — separate from the upload ones. Completion is shared: a single `onCompleted` fires once, after *both* queues finish, not once per queue.
+
+```javascript
+syncEngine.registerListeners({
+    onStarted_download: (data) => {
+        console.log(`Download sync started. Total: ${data.totalCount}`);
+    },
+    onProgress_download: (progress) => {
+        console.log(`Download progress: ${progress.percentage}% (${progress.completedCount}/${progress.totalCount})`);
+    },
+    onFailed_download: (data) => {
+        console.error("Download sync suspended:", data.error);
+    },
+    onCompleted: (data) => {
+        // Fires once the whole run (uploads + downloads) is done — not download-specific.
+        console.log(`Sync run complete. ${data.completedCount} total items processed.`);
+    }
+});
+```
+
+Full 7-event reference (payload shapes, upload vs. download vs. shared): [Integration Guide → Register Progress Listeners](integration-guide.md#step-2-register-progress-listeners).
+
+### 3. Fetch Queued Downloads
 
 ```javascript
 syncEngine.getQueuedDownloads(
