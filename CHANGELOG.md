@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.2] - 2026-09-22
+
+### Added
+
+- Database Inspector: connection config panel (server URL, masked headers, encryption status) shown up front, to catch misconfiguration without digging through a raw HTTP error body.
+- Database Inspector: per-row **Retry** action — resets a record to `pending` and clears its last error, without waiting for the rest of the queue.
+- Database Inspector: status filter chips (All/Pending/Failed/Completed) with live counts per tab.
+- Database Inspector: large `Payload`/`Error`/`ResponseData` values are truncated (head+tail, with an omitted-byte count) in both the list view and JSON export, with a **View full** button that fetches the untruncated single record on demand.
+- Database Inspector: copy-to-clipboard button next to each record's `Id`.
+
+### Fixed
+
+- Database Inspector: header no longer sits partially under the system status bar / notch on edge-to-edge layouts (Android 15+ targetSdk, iOS notch/Dynamic Island) — now reserves space via `env(safe-area-inset-top)`, with a plain fallback for WebViews that don't support it.
+
 ## [1.0.1] - 2026-09-22
 
 ### Fixed

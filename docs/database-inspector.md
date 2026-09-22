@@ -8,9 +8,13 @@ This document explains the built-in recovery/debugging screen bundled with the p
 
 `sync_queue` and `download_queue` are private, opaque tables — there's no way for a developer or support engineer to look inside them without writing custom debug tooling into every app that consumes this plugin. The Database Inspector solves that once, inside the plugin itself: a single JS call opens a native, full-screen recovery UI (`WKWebView` on iOS, `WebView` on Android) that lets you:
 
-- Browse every row in both `sync_queue` and `download_queue`, including columns the regular JS API doesn't expose (`Payload`, `FilePath`, `Error`, `Sequence`, `ResponseData`).
+- See the connection config (server URL, header names with masked values, encryption status) the running instance is actually using — the fastest way to rule out "wrong endpoint" before digging into any individual record.
+- Browse every row in both `sync_queue` and `download_queue`, including columns the regular JS API doesn't expose (`Payload`, `FilePath`, `Error`, `Sequence`, `ResponseData`), filterable by status with live counts.
 - Delete individual stuck/bad records directly from the queue.
-- Export both tables as a single JSON file, so pending data can be recovered and re-imported/processed elsewhere if a device's sync is permanently stuck.
+- **Retry** a single record — resets it to `pending` and clears its last error, without needing to wait for or depend on the rest of the queue.
+- View the full, untruncated value of a large `Payload`/`Error`/`ResponseData` field on demand (the list view truncates anything over ~1000 characters so one giant HTTP error page doesn't push the rest of a row off-screen).
+- Copy a record's `Id` to the clipboard with one tap.
+- Export both tables as a single JSON file (large fields truncated the same way as the list view, so the export stays a manageable size even if a payload embeds a big base64 blob), so pending data can be recovered and re-imported/processed elsewhere if a device's sync is permanently stuck.
 
 **Use case:** a field device fails to sync (network never recovers, a malformed record blocks the queue, the app is being decommissioned) — instead of losing whatever was queued, an operator or support engineer opens the inspector, exports the JSON, and hands it off for manual reconciliation.
 
@@ -36,8 +40,11 @@ The success callback fires as soon as the native screen is presented — it does
 | Action | Behavior |
 | :--- | :--- |
 | **Browse** | Two tabs — "Sync Queue (Uploads)" and "Download Queue" — each rendering every row, most recent first. |
+| **Filter** | Chips above each table (All / Pending / Failed / Completed) show a live count per status and filter the table; the config panel and export are unaffected by the current filter. |
+| **Retry** | Per-row button that resets `Status` to `pending` and clears `Error`. Does **not** trigger a sync by itself — the next `sync()` run (automatic or manual) picks it up, same as any other pending/failed record. |
 | **Delete** | Per-row delete button, with an in-page confirmation prompt. Deletes are immediate and irreversible — there's no undo. |
-| **Export All (JSON)** | Serializes both tables (all columns, all rows) into one JSON file (`{ "syncQueue": [...], "downloadQueue": [...] }`) and hands it to the OS share sheet (iOS `UIActivityViewController`) or a file picker (Android Storage Access Framework) — no extra permission or `FileProvider` setup required from the consuming app. |
+| **View full** | Appears under any `Payload`/`Error`/`ResponseData` cell that got truncated in the list view; fetches that one record fresh (untruncated) and shows it in a scrollable modal with its own copy button. |
+| **Export All (JSON)** | Serializes both tables (all columns, all rows — large text fields truncated the same as the list view) into one JSON file (`{ "syncQueue": [...], "downloadQueue": [...] }`) and hands it to the OS share sheet (iOS `UIActivityViewController`) or a file picker (Android Storage Access Framework) — no extra permission or `FileProvider` setup required from the consuming app. |
 
 ---
 

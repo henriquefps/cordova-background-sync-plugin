@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
 <title>Database Inspector</title>
 <style>
   :root {
@@ -29,7 +29,16 @@
   header {
     background: var(--card-bg);
     border-bottom: 1px solid var(--border);
+    /* env(safe-area-inset-top) keeps the header clear of the status bar / notch on
+       edge-to-edge layouts (Android 15+ targetSdk, iOS notch/Dynamic Island). Padding, not
+       margin, so the offset holds even once this sticky header is scrolled to top:0 — a
+       margin would only apply before the first scroll, then the header would jump back
+       under the status bar. Declared twice: a plain fallback first (kept by WebViews too
+       old to parse env() at all — those treat the whole env() declaration as invalid and
+       drop it, not just fall back to 0), then the real one that WebViews which do support
+       it will apply instead. */
     padding: 0.9rem 1rem;
+    padding-top: calc(0.9rem + env(safe-area-inset-top, 0px));
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -54,7 +63,53 @@
   .btn-primary { background: var(--primary); color: #fff; }
   .btn-secondary { background: #e5e7eb; color: var(--text); }
   .btn-danger { background: var(--danger-bg); color: var(--danger); }
+  .btn-success { background: #d1fae5; color: #047857; }
   .btn-small { font-size: 0.75rem; padding: 0.3rem 0.6rem; border-radius: 6px; }
+  .btn-link {
+    background: none;
+    border: none;
+    color: var(--primary);
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 0.15rem 0;
+    cursor: pointer;
+    text-decoration: underline;
+  }
+  .btn:disabled { opacity: 0.5; cursor: default; }
+
+  /* ---- Config panel ---- */
+  .config-panel {
+    background: var(--card-bg);
+    border-bottom: 1px solid var(--border);
+    padding: 0.6rem 1rem;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+  }
+  .config-panel .config-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem 1.25rem;
+    align-items: baseline;
+  }
+  .config-panel strong { color: var(--text); font-weight: 600; }
+  .config-panel .config-label { color: var(--text-muted); margin-right: 0.25rem; }
+  .config-panel code {
+    font-family: ui-monospace, 'SF Mono', Consolas, monospace;
+    font-size: 0.72rem;
+    background: #f3f4f6;
+    padding: 0.1rem 0.35rem;
+    border-radius: 4px;
+  }
+  .config-panel .config-missing { color: var(--danger); font-weight: 600; }
+  .config-toggle {
+    font-size: 0.72rem;
+    color: var(--primary);
+    cursor: pointer;
+    font-weight: 600;
+    margin-left: 0.5rem;
+  }
+
+  /* ---- Tabs / summary ---- */
   .tabs {
     display: flex;
     gap: 0.5rem;
@@ -83,7 +138,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 0.75rem;
+    margin-bottom: 0.5rem;
     gap: 0.5rem;
     flex-wrap: wrap;
   }
@@ -91,6 +146,28 @@
     font-size: 0.8rem;
     color: var(--text-muted);
   }
+  .summary-bar {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.75rem;
+  }
+  .summary-chip {
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 0.25rem 0.6rem;
+    border-radius: 999px;
+    border: 1.5px solid transparent;
+    cursor: pointer;
+    background: #fff;
+    color: var(--text-muted);
+    border-color: var(--border);
+  }
+  .summary-chip.active { border-color: currentColor; }
+  .summary-chip[data-status="pending"] { color: #d97706; }
+  .summary-chip[data-status="failed"] { color: var(--danger); }
+  .summary-chip[data-status="completed"] { color: var(--success); }
+  .summary-chip[data-status="all"] { color: var(--primary); }
   .table-wrapper {
     overflow-x: auto;
     border: 1px solid var(--border);
@@ -119,13 +196,14 @@
     font-size: 0.75rem;
     color: var(--text-muted);
   }
+  td.id-cell { display: flex; align-items: baseline; gap: 0.35rem; }
   td.wrap-cell {
     max-width: 260px;
     overflow-wrap: break-word;
     word-break: break-all;
   }
   td.wrap-cell pre {
-    margin: 0;
+    margin: 0 0 0.25rem;
     max-height: 90px;
     overflow: auto;
     white-space: pre-wrap;
@@ -133,6 +211,7 @@
     font-family: ui-monospace, 'SF Mono', Consolas, monospace;
     font-size: 0.72rem;
   }
+  .row-actions { display: flex; gap: 0.35rem; flex-wrap: wrap; }
   .badge {
     display: inline-block;
     padding: 0.2rem 0.55rem;
@@ -159,12 +238,51 @@
     font-size: 0.85rem;
     margin-bottom: 0.75rem;
   }
+  .toast {
+    position: fixed;
+    left: 50%;
+    bottom: 1.25rem;
+    transform: translateX(-50%);
+    background: #111827;
+    color: #fff;
+    padding: 0.55rem 1rem;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    z-index: 1100;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
+  }
+  .toast.visible { opacity: 1; }
   .loading {
     padding: 2rem;
     text-align: center;
     color: var(--text-muted);
     font-size: 0.85rem;
   }
+
+  /* ---- Modal (used for confirm + "view full") ---- */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.45);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 1000; padding: 1rem;
+  }
+  .modal-box {
+    background: #fff; border-radius: 12px; padding: 1.25rem;
+    max-width: 320px; width: 100%;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.25);
+  }
+  .modal-box.modal-wide { max-width: 92vw; max-height: 85vh; display: flex; flex-direction: column; }
+  .modal-box p { margin: 0 0 1rem; font-size: 0.9rem; color: #1f2937; line-height: 1.4; }
+  .modal-box h2 { margin: 0 0 0.75rem; font-size: 0.95rem; }
+  .modal-box pre {
+    background: #f9fafb; border: 1px solid var(--border); border-radius: 8px;
+    padding: 0.75rem; font-size: 0.75rem; overflow: auto; flex: 1;
+    white-space: pre-wrap; word-break: break-all;
+    font-family: ui-monospace, 'SF Mono', Consolas, monospace;
+    margin: 0 0 0.75rem;
+  }
+  .modal-actions { display: flex; justify-content: flex-end; gap: 0.5rem; }
 </style>
 </head>
 <body>
@@ -176,6 +294,8 @@
     <button class="btn btn-secondary" id="closeBtn">Close</button>
   </div>
 </header>
+
+<div class="config-panel" id="configPanel">Loading config…</div>
 
 <div class="tabs">
   <div class="tab active" data-tab="sync">Sync Queue (Uploads)</div>
@@ -190,6 +310,7 @@
       <span class="count" id="syncCount"></span>
       <button class="btn btn-secondary btn-small" id="refreshSyncBtn">Refresh</button>
     </div>
+    <div class="summary-bar" id="syncSummary"></div>
     <div id="syncContent" class="loading">Loading...</div>
   </div>
 
@@ -198,9 +319,12 @@
       <span class="count" id="downloadCount"></span>
       <button class="btn btn-secondary btn-small" id="refreshDownloadBtn">Refresh</button>
     </div>
+    <div class="summary-bar" id="downloadSummary"></div>
     <div id="downloadContent" class="loading">Loading...</div>
   </div>
 </main>
+
+<div class="toast" id="toast"></div>
 
 <script>
 (function () {
@@ -255,8 +379,13 @@
     return {
       getSyncQueue: function () { return call('getSyncQueue'); },
       getDownloadQueue: function () { return call('getDownloadQueue'); },
+      getSyncRecordDetail: function (id) { return call('getSyncRecordDetail', { id: id }); },
+      getDownloadRecordDetail: function (id) { return call('getDownloadRecordDetail', { id: id }); },
       deleteSyncRecord: function (id) { return call('deleteSyncRecord', { id: id }); },
       deleteDownloadRecord: function (id) { return call('deleteDownloadRecord', { id: id }); },
+      retrySyncRecord: function (id) { return call('retrySyncRecord', { id: id }); },
+      retryDownloadRecord: function (id) { return call('retryDownloadRecord', { id: id }); },
+      getConfig: function () { return call('getConfig'); },
       exportAll: function () { return call('exportAll'); },
       close: function () { return call('close'); }
     };
@@ -269,23 +398,49 @@
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
+  function isTruncated(value) {
+    return typeof value === 'string' && value.indexOf('<TRUNCATED:') !== -1;
+  }
+
+  function showToast(message) {
+    var toast = document.getElementById('toast');
+    toast.textContent = message;
+    toast.classList.add('visible');
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(function () { toast.classList.remove('visible'); }, 1800);
+  }
+
+  // Works reliably inside a Cordova WebView, unlike navigator.clipboard.writeText, which
+  // needs a secure-context + permission dance that plain file:// / WKWebView hosts don't grant.
+  function copyToClipboard(text) {
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.cssText = 'position:fixed;top:-1000px;left:-1000px;';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    var ok = false;
+    try { ok = document.execCommand('copy'); } catch (e) { /* no-op */ }
+    document.body.removeChild(ta);
+    showToast(ok ? 'Copied to clipboard' : 'Copy failed');
+  }
+
   // window.confirm()/alert() require native WKUIDelegate (iOS) / WebChromeClient (Android)
   // wiring that this inspector's host views don't provide, so they silently no-op instead of
   // showing a dialog. This in-page modal works identically on both platforms without it.
   function showConfirm(message) {
     return new Promise(function (resolve) {
       var overlay = document.createElement('div');
-      overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;z-index:1000;padding:1rem;';
+      overlay.className = 'modal-overlay';
 
       var box = document.createElement('div');
-      box.style.cssText = 'background:#fff;border-radius:12px;padding:1.25rem;max-width:320px;width:100%;box-shadow:0 10px 25px rgba(0,0,0,0.25);';
+      box.className = 'modal-box';
 
       var text = document.createElement('p');
-      text.style.cssText = 'margin:0 0 1rem;font-size:0.9rem;color:#1f2937;line-height:1.4;';
       text.textContent = message;
 
       var actions = document.createElement('div');
-      actions.style.cssText = 'display:flex;justify-content:flex-end;gap:0.5rem;';
+      actions.className = 'modal-actions';
 
       var cancelBtn = document.createElement('button');
       cancelBtn.className = 'btn btn-secondary btn-small';
@@ -312,6 +467,53 @@
     });
   }
 
+  // Fetches the untruncated record and shows one field's full value in a scrollable modal,
+  // with its own copy-to-clipboard — for a truncated Payload/Error/ResponseData cell.
+  function showFullField(fetchDetail, id, fieldName) {
+    fetchDetail(id).then(function (record) {
+      if (record && record.error) throw new Error(record.error);
+      var value = record ? record[fieldName] : '';
+
+      var overlay = document.createElement('div');
+      overlay.className = 'modal-overlay';
+
+      var box = document.createElement('div');
+      box.className = 'modal-box modal-wide';
+
+      var title = document.createElement('h2');
+      title.textContent = fieldName + ' — full value (' + (value ? value.length : 0) + ' chars)';
+
+      var pre = document.createElement('pre');
+      pre.textContent = value || '';
+
+      var actions = document.createElement('div');
+      actions.className = 'modal-actions';
+
+      var copyBtn = document.createElement('button');
+      copyBtn.className = 'btn btn-secondary btn-small';
+      copyBtn.textContent = 'Copy';
+      copyBtn.addEventListener('click', function () { copyToClipboard(value || ''); });
+
+      var closeBtn = document.createElement('button');
+      closeBtn.className = 'btn btn-primary btn-small';
+      closeBtn.textContent = 'Close';
+
+      actions.appendChild(copyBtn);
+      actions.appendChild(closeBtn);
+      box.appendChild(title);
+      box.appendChild(pre);
+      box.appendChild(actions);
+      overlay.appendChild(box);
+      document.body.appendChild(overlay);
+
+      function cleanup() { document.body.removeChild(overlay); }
+      closeBtn.addEventListener('click', cleanup);
+      overlay.addEventListener('click', function (e) { if (e.target === overlay) cleanup(); });
+    }).catch(function (e) {
+      showError('Failed to load full value: ' + (e && e.message ? e.message : e));
+    });
+  }
+
   function statusBadge(status) {
     var normalized = (status || '').toLowerCase();
     var cls = ['pending', 'failed', 'completed'].indexOf(normalized) >= 0 ? normalized : 'unknown';
@@ -324,33 +526,129 @@
     banner.style.display = message ? 'block' : 'none';
   }
 
+  function cellWithField(rawValue, id, fieldName) {
+    var html = '<pre>' + esc(rawValue) + '</pre>';
+    if (isTruncated(rawValue)) {
+      html += '<button class="btn-link" data-view-full data-field="' + esc(fieldName) + '" data-id="' + esc(id) + '">View full</button>';
+    }
+    return html;
+  }
+
+  function wireViewFullButtons(container, fetchDetail) {
+    Array.prototype.forEach.call(container.querySelectorAll('[data-view-full]'), function (btn) {
+      btn.addEventListener('click', function () {
+        showFullField(fetchDetail, btn.getAttribute('data-id'), btn.getAttribute('data-field'));
+      });
+    });
+  }
+
+  // ---- Config panel ---------------------------------------------------------
+  function loadConfig() {
+    var panel = document.getElementById('configPanel');
+    Bridge.getConfig().then(function (config) {
+      if (config && config.error) throw new Error(config.error);
+      var headerParts = [];
+      var headers = config.headers || {};
+      Object.keys(headers).forEach(function (key) {
+        headerParts.push('<code>' + esc(key) + ': ' + esc(headers[key]) + '</code>');
+      });
+      var serverUrlHtml = config.serverUrl
+        ? '<code>' + esc(config.serverUrl) + '</code>'
+        : '<span class="config-missing">not set</span>';
+      panel.innerHTML =
+        '<div class="config-row">' +
+        '<span><span class="config-label">Server URL:</span><strong>' + serverUrlHtml + '</strong></span>' +
+        '<span><span class="config-label">Encrypted DB:</span><strong>' + (config.encryptDatabase ? 'Yes' : 'No') + '</strong></span>' +
+        '<span><span class="config-label">Headers:</span>' + (headerParts.length ? headerParts.join(' ') : '<span class="config-missing">none configured</span>') + '</span>' +
+        '</div>';
+    }).catch(function (e) {
+      panel.innerHTML = '<span class="config-missing">Failed to load config: ' + esc(e && e.message ? e.message : e) + '</span>';
+    });
+  }
+
+  // ---- Filter state ---------------------------------------------------------
+  var syncFilter = 'all';
+  var downloadFilter = 'all';
+  var lastSyncRows = [];
+  var lastDownloadRows = [];
+
+  function countByStatus(rows) {
+    var counts = { pending: 0, failed: 0, completed: 0, other: 0 };
+    rows.forEach(function (row) {
+      var s = (row.Status || '').toLowerCase();
+      if (counts.hasOwnProperty(s)) counts[s]++;
+      else counts.other++;
+    });
+    return counts;
+  }
+
+  function renderSummaryBar(containerId, rows, currentFilter, onFilterChange) {
+    var counts = countByStatus(rows);
+    var chips = [
+      { key: 'all', label: 'All', count: rows.length },
+      { key: 'pending', label: 'Pending', count: counts.pending },
+      { key: 'failed', label: 'Failed', count: counts.failed },
+      { key: 'completed', label: 'Completed', count: counts.completed }
+    ];
+    var container = document.getElementById(containerId);
+    container.innerHTML = chips.map(function (c) {
+      return '<button class="summary-chip' + (currentFilter === c.key ? ' active' : '') + '" data-status="' + c.key + '">' +
+        c.label + ' (' + c.count + ')</button>';
+    }).join('');
+    Array.prototype.forEach.call(container.querySelectorAll('.summary-chip'), function (chip) {
+      chip.addEventListener('click', function () { onFilterChange(chip.getAttribute('data-status')); });
+    });
+  }
+
+  function filterRows(rows, filter) {
+    if (filter === 'all') return rows;
+    return rows.filter(function (row) { return (row.Status || '').toLowerCase() === filter; });
+  }
+
   // ---- Sync Queue rendering -------------------------------------------
   function renderSyncQueue(rows) {
-    document.getElementById('syncCount').textContent = rows.length + ' record(s)';
-    if (rows.length === 0) {
-      document.getElementById('syncContent').innerHTML = '<div class="empty-state">Sync queue is empty.</div>';
+    lastSyncRows = rows;
+    renderSummaryBar('syncSummary', rows, syncFilter, function (status) {
+      syncFilter = status;
+      renderSyncQueue(lastSyncRows);
+    });
+
+    var visible = filterRows(rows, syncFilter);
+    document.getElementById('syncCount').textContent = visible.length + ' of ' + rows.length + ' record(s)';
+    if (visible.length === 0) {
+      document.getElementById('syncContent').innerHTML = '<div class="empty-state">' +
+        (rows.length === 0 ? 'Sync queue is empty.' : 'No records match this filter.') + '</div>';
       return;
     }
     var html = '<div class="table-wrapper"><table><thead><tr>' +
       '<th>Seq</th><th>Id</th><th>Status</th><th>Endpoint</th><th>Strategy</th><th>FilePath</th><th>Payload</th><th>Error</th><th></th>' +
       '</tr></thead><tbody>';
-    rows.forEach(function (row) {
+    visible.forEach(function (row) {
       html += '<tr>' +
         '<td class="mono">' + esc(row.Sequence) + '</td>' +
-        '<td class="mono">' + esc(row.Id) + '</td>' +
+        '<td class="mono id-cell">' + esc(row.Id) + '<button class="btn-link" data-copy-id="' + esc(row.Id) + '">copy</button></td>' +
         '<td>' + statusBadge(row.Status) + '</td>' +
         '<td class="wrap-cell">' + esc(row.Endpoint) + '</td>' +
         '<td>' + esc(row.UploadStrategy) + '</td>' +
         '<td class="wrap-cell">' + esc(row.FilePath) + '</td>' +
-        '<td class="wrap-cell"><pre>' + esc(row.Payload) + '</pre></td>' +
-        '<td class="wrap-cell">' + esc(row.Error) + '</td>' +
-        '<td><button class="btn btn-danger btn-small" data-delete-sync="' + esc(row.Id) + '">Delete</button></td>' +
+        '<td class="wrap-cell">' + cellWithField(row.Payload, row.Id, 'Payload') + '</td>' +
+        '<td class="wrap-cell">' + cellWithField(row.Error, row.Id, 'Error') + '</td>' +
+        '<td><div class="row-actions">' +
+        '<button class="btn btn-success btn-small" data-retry-sync="' + esc(row.Id) + '">Retry</button>' +
+        '<button class="btn btn-danger btn-small" data-delete-sync="' + esc(row.Id) + '">Delete</button>' +
+        '</div></td>' +
         '</tr>';
     });
     html += '</tbody></table></div>';
-    document.getElementById('syncContent').innerHTML = html;
+    var content = document.getElementById('syncContent');
+    content.innerHTML = html;
+    wireViewFullButtons(content, Bridge.getSyncRecordDetail);
 
-    Array.prototype.forEach.call(document.querySelectorAll('[data-delete-sync]'), function (btn) {
+    Array.prototype.forEach.call(content.querySelectorAll('[data-copy-id]'), function (btn) {
+      btn.addEventListener('click', function () { copyToClipboard(btn.getAttribute('data-copy-id')); });
+    });
+
+    Array.prototype.forEach.call(content.querySelectorAll('[data-delete-sync]'), function (btn) {
       btn.addEventListener('click', function () {
         var id = btn.getAttribute('data-delete-sync');
         showConfirm('Delete sync_queue record ' + id + '? This cannot be undone.').then(function (confirmed) {
@@ -361,11 +659,26 @@
         });
       });
     });
+
+    Array.prototype.forEach.call(content.querySelectorAll('[data-retry-sync]'), function (btn) {
+      btn.addEventListener('click', function () {
+        var id = btn.getAttribute('data-retry-sync');
+        btn.disabled = true;
+        Bridge.retrySyncRecord(id).then(function (res) {
+          if (res && res.error) throw new Error(res.error);
+          showToast('Marked as pending — will retry on next sync');
+          return loadSyncQueue();
+        }).catch(function (e) {
+          btn.disabled = false;
+          showError('Failed to retry record: ' + (e && e.message ? e.message : e));
+        });
+      });
+    });
   }
 
   function loadSyncQueue() {
     document.getElementById('syncContent').innerHTML = '<div class="loading">Loading...</div>';
-    Bridge.getSyncQueue().then(function (rows) {
+    return Bridge.getSyncQueue().then(function (rows) {
       showError('');
       renderSyncQueue(Array.isArray(rows) ? rows : []);
     }).catch(function (e) {
@@ -376,31 +689,48 @@
 
   // ---- Download Queue rendering -----------------------------------------
   function renderDownloadQueue(rows) {
-    document.getElementById('downloadCount').textContent = rows.length + ' record(s)';
-    if (rows.length === 0) {
-      document.getElementById('downloadContent').innerHTML = '<div class="empty-state">Download queue is empty.</div>';
+    lastDownloadRows = rows;
+    renderSummaryBar('downloadSummary', rows, downloadFilter, function (status) {
+      downloadFilter = status;
+      renderDownloadQueue(lastDownloadRows);
+    });
+
+    var visible = filterRows(rows, downloadFilter);
+    document.getElementById('downloadCount').textContent = visible.length + ' of ' + rows.length + ' record(s)';
+    if (visible.length === 0) {
+      document.getElementById('downloadContent').innerHTML = '<div class="empty-state">' +
+        (rows.length === 0 ? 'Download queue is empty.' : 'No records match this filter.') + '</div>';
       return;
     }
     var html = '<div class="table-wrapper"><table><thead><tr>' +
       '<th>Seq</th><th>Id</th><th>Status</th><th>Endpoint</th><th>Strategy</th><th>FilePath</th><th>ResponseData</th><th>Error</th><th></th>' +
       '</tr></thead><tbody>';
-    rows.forEach(function (row) {
+    visible.forEach(function (row) {
       html += '<tr>' +
         '<td class="mono">' + esc(row.Sequence) + '</td>' +
-        '<td class="mono">' + esc(row.Id) + '</td>' +
+        '<td class="mono id-cell">' + esc(row.Id) + '<button class="btn-link" data-copy-id="' + esc(row.Id) + '">copy</button></td>' +
         '<td>' + statusBadge(row.Status) + '</td>' +
         '<td class="wrap-cell">' + esc(row.Endpoint) + '</td>' +
         '<td>' + esc(row.DownloadStrategy) + '</td>' +
         '<td class="wrap-cell">' + esc(row.FilePath) + '</td>' +
-        '<td class="wrap-cell"><pre>' + esc(row.ResponseData) + '</pre></td>' +
-        '<td class="wrap-cell">' + esc(row.Error) + '</td>' +
-        '<td><button class="btn btn-danger btn-small" data-delete-download="' + esc(row.Id) + '">Delete</button></td>' +
+        '<td class="wrap-cell">' + cellWithField(row.ResponseData, row.Id, 'ResponseData') + '</td>' +
+        '<td class="wrap-cell">' + cellWithField(row.Error, row.Id, 'Error') + '</td>' +
+        '<td><div class="row-actions">' +
+        '<button class="btn btn-success btn-small" data-retry-download="' + esc(row.Id) + '">Retry</button>' +
+        '<button class="btn btn-danger btn-small" data-delete-download="' + esc(row.Id) + '">Delete</button>' +
+        '</div></td>' +
         '</tr>';
     });
     html += '</tbody></table></div>';
-    document.getElementById('downloadContent').innerHTML = html;
+    var content = document.getElementById('downloadContent');
+    content.innerHTML = html;
+    wireViewFullButtons(content, Bridge.getDownloadRecordDetail);
 
-    Array.prototype.forEach.call(document.querySelectorAll('[data-delete-download]'), function (btn) {
+    Array.prototype.forEach.call(content.querySelectorAll('[data-copy-id]'), function (btn) {
+      btn.addEventListener('click', function () { copyToClipboard(btn.getAttribute('data-copy-id')); });
+    });
+
+    Array.prototype.forEach.call(content.querySelectorAll('[data-delete-download]'), function (btn) {
       btn.addEventListener('click', function () {
         var id = btn.getAttribute('data-delete-download');
         showConfirm('Delete download_queue record ' + id + '? This cannot be undone.').then(function (confirmed) {
@@ -411,11 +741,26 @@
         });
       });
     });
+
+    Array.prototype.forEach.call(content.querySelectorAll('[data-retry-download]'), function (btn) {
+      btn.addEventListener('click', function () {
+        var id = btn.getAttribute('data-retry-download');
+        btn.disabled = true;
+        Bridge.retryDownloadRecord(id).then(function (res) {
+          if (res && res.error) throw new Error(res.error);
+          showToast('Marked as pending — will retry on next sync');
+          return loadDownloadQueue();
+        }).catch(function (e) {
+          btn.disabled = false;
+          showError('Failed to retry record: ' + (e && e.message ? e.message : e));
+        });
+      });
+    });
   }
 
   function loadDownloadQueue() {
     document.getElementById('downloadContent').innerHTML = '<div class="loading">Loading...</div>';
-    Bridge.getDownloadQueue().then(function (rows) {
+    return Bridge.getDownloadQueue().then(function (rows) {
       showError('');
       renderDownloadQueue(Array.isArray(rows) ? rows : []);
     }).catch(function (e) {
@@ -449,6 +794,7 @@
   });
 
   // ---- Initial load ---------------------------------------------------------
+  loadConfig();
   loadSyncQueue();
   loadDownloadQueue();
 })();
