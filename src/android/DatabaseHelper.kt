@@ -4,7 +4,7 @@ import android.content.Context
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.util.Base64
-import net.zetetic.database.sqlcipher.SQLiteDatabase
+import android.database.sqlite.SQLiteDatabase
 import java.io.File
 import java.security.KeyStore
 import javax.crypto.Cipher
@@ -78,14 +78,6 @@ object EncryptionHelper {
 object DatabaseHelper {
     private const val DATABASE_NAME = "bg_sync.db"
     
-    init {
-        try {
-            System.loadLibrary("sqlcipher")
-        } catch (e: UnsatisfiedLinkError) {
-            android.util.Log.e("BackgroundSyncPlugin", "Failed to load sqlcipher native library: ${e.message}")
-        }
-    }
-    
     fun getDatabasePath(context: Context): File {
         return context.getDatabasePath(DATABASE_NAME)
     }
@@ -98,10 +90,13 @@ object DatabaseHelper {
             parentDir.mkdirs()
         }
 
-        val password = if (encrypt) EncryptionHelper.getOrCreatePassphrase(context) else ""
+        // nocipher build: SQLCipher is not bundled, so the database is always opened unencrypted.
+        if (encrypt) {
+            android.util.Log.w("BackgroundSyncPlugin", "encryptDatabase is not supported in the nocipher build; opening bg_sync.db unencrypted.")
+        }
 
         try {
-            val db = SQLiteDatabase.openOrCreateDatabase(dbFile, password, null, null)
+            val db = SQLiteDatabase.openOrCreateDatabase(dbFile, null)
             createTables(db)
             return db
         } catch (e: Exception) {
@@ -121,7 +116,7 @@ object DatabaseHelper {
             val shmFile = File(dbFile.absolutePath + "-shm")
             if (shmFile.exists()) shmFile.delete()
 
-            val db = SQLiteDatabase.openOrCreateDatabase(dbFile, password, null, null)
+            val db = SQLiteDatabase.openOrCreateDatabase(dbFile, null)
             createTables(db)
             return db
         }

@@ -5,8 +5,8 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import android.database.CursorWindow
-import net.zetetic.database.sqlcipher.SQLiteCursor
-import net.zetetic.database.sqlcipher.SQLiteDatabase
+import android.database.sqlite.SQLiteCursor
+import android.database.sqlite.SQLiteDatabase
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.work.CoroutineWorker

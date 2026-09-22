@@ -198,10 +198,10 @@
   }
   
   sqlite3_busy_timeout(db, 5000);
-  
+
+  // nocipher build: SQLCipher is not bundled, so the database is always opened unencrypted.
   if (self.encryptDatabase) {
-    NSString *key = [self getOrCreatePassphrase];
-    sqlite3_key(db, [key UTF8String], (int)[key length]);
+    NSLog(@"[BackgroundSyncPlugin] encryptDatabase is not supported in the nocipher build; opening bg_sync.db unencrypted.");
   }
   
   sqlite3_stmt *stmt;
@@ -224,10 +224,6 @@
       return NULL;
     }
     sqlite3_busy_timeout(db, 5000);
-    if (self.encryptDatabase) {
-      NSString *key = [self getOrCreatePassphrase];
-      sqlite3_key(db, [key UTF8String], (int)[key length]);
-    }
   } else {
     sqlite3_finalize(stmt);
   }

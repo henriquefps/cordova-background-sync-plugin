@@ -14,7 +14,7 @@ import org.json.JSONException
 import org.json.JSONObject
 import java.util.concurrent.TimeUnit
 import android.content.ContentValues
-import net.zetetic.database.sqlcipher.SQLiteDatabase
+import android.database.sqlite.SQLiteDatabase
 
 class BackgroundSyncPlugin : CordovaPlugin() {
 

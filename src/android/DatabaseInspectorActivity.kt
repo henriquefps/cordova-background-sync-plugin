@@ -8,7 +8,7 @@ import android.view.ViewGroup
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
 import android.widget.Toast
-import net.zetetic.database.sqlcipher.SQLiteDatabase
+import android.database.sqlite.SQLiteDatabase
 import org.json.JSONArray
 import org.json.JSONObject
 

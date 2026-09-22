@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.2-nocipher] - 2026-09-22
+
+Variant of 1.0.2 without SQLCipher, for apps that do not need database encryption.
+
+### Changed
+
+- Android: use the platform `android.database.sqlite` API; removed the `net.zetetic:sqlcipher-android` dependency.
+- iOS: link the system `libsqlite3`; removed the SQLCipher CocoaPods dependency. Avoids the YapDatabase `'sqlite3.h' file not found` build failure on OutSystems 11 MABS and the symbol mix with Cordova-sqlite-storage's bundled SQLite.
+- `encryptDatabase` is ignored (a warning is logged); `bg_sync.db` is always unencrypted. An existing encrypted database is recreated on first open.
+
 ## [1.0.2] - 2026-09-22
 
 ### Added

@@ -1,8 +1,6 @@
 #import <Cordova/CDVPlugin.h>
 #import <sqlite3.h>
 
-int sqlite3_key(sqlite3 *db, const void *zKey, int nKey);
-
 @interface BackgroundSyncPlugin : CDVPlugin
 
 @property (nonatomic, strong) NSString *serverUrl;

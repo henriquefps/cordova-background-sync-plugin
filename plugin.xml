@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <plugin xmlns="http://apache.org/cordova/ns/plugins/1.0"
     id="cordova-background-sync-plugin"
-    version="1.0.2"
+    version="1.0.2-nocipher"
     xmlns:android="http://schemas.android.com/apk/res/android">
 
     <name>BackgroundSyncPlugin</name>
@@ -85,13 +85,6 @@
         <source-file src="src/ios/DatabaseInspectorViewController.m" />
         <header-file src="src/ios/DatabaseInspectorViewController.h" />
         <resource-file src="www/inspector/inspector.html" />
-        <podspec>
-            <config>
-                <source url="https://cdn.cocoapods.org/" />
-            </config>
-            <pods>
-                <pod name="SQLCipher" spec="~> 4.0" />
-            </pods>
-        </podspec>
+        <framework src="libsqlite3.tbd" />
     </platform>
 </plugin>
