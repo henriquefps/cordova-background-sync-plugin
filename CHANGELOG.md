@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.4-nocipher] - 2026-09-23
+
+### Fixed
+
+- iOS: `removeRecords`/`removeDownloads` no longer crash the app when the JS side passes an array containing `null` (or any other non-string element) as a record ID. Such elements are now skipped instead of causing an `NSInvalidArgumentException` (`-[NSNull UTF8String]: unrecognized selector`) while iterating the array.
+
 ## [1.0.3-nocipher] - 2026-09-23
 
 ### Fixed

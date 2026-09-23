@@ -487,7 +487,9 @@
       // after every single statement — matches the Android implementation's beginTransaction/
       // setTransactionSuccessful/endTransaction pattern.
       sqlite3_exec(db, "BEGIN TRANSACTION;", NULL, NULL, NULL);
-      for (NSString *recordId in ids) {
+      for (id item in ids) {
+        if (![item isKindOfClass:[NSString class]]) continue;
+        NSString *recordId = (NSString *)item;
         sqlite3_bind_text(stmt, 1, [recordId UTF8String], -1, SQLITE_TRANSIENT);
         sqlite3_step(stmt);
         sqlite3_reset(stmt);
@@ -779,7 +781,9 @@
       // after every single statement — matches the Android implementation's beginTransaction/
       // setTransactionSuccessful/endTransaction pattern.
       sqlite3_exec(db, "BEGIN TRANSACTION;", NULL, NULL, NULL);
-      for (NSString *recordId in ids) {
+      for (id item in ids) {
+        if (![item isKindOfClass:[NSString class]]) continue;
+        NSString *recordId = (NSString *)item;
         sqlite3_bind_text(stmt, 1, [recordId UTF8String], -1, SQLITE_TRANSIENT);
         sqlite3_step(stmt);
         sqlite3_reset(stmt);
