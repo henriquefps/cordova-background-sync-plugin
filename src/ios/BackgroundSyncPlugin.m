@@ -1041,12 +1041,13 @@
       sqlite3_finalize(payloadStmt);
     }
 
-    BOOL success = NO;
+    NSString *uploadError = nil;
     if ([strategy caseInsensitiveCompare:@"PRESIGNED_URL"] == NSOrderedSame) {
-      success = [self uploadItemViaPresignedUrlWithPayload:payload endpoint:endpoint filePath:filePath];
+      uploadError = [self uploadItemViaPresignedUrlWithPayload:payload endpoint:endpoint filePath:filePath];
     } else {
-      success = [self uploadItemWithPayload:payload endpoint:endpoint filePath:filePath];
+      uploadError = [self uploadItemWithPayload:payload endpoint:endpoint filePath:filePath];
     }
+    BOOL success = (uploadError == nil);
 
     int percentage = (int)(((float)(completedCount + 1) / (float)totalCount) * 100);
 
@@ -1079,9 +1080,11 @@
         [self sendLocalNotificationWithTitle:title body:body isSilent:YES];
       }
     } else {
+      NSString *errorMessage = uploadError ?: @"Network upload error";
       sqlite3_stmt *updStmt;
-      if (sqlite3_prepare_v2(db, "UPDATE sync_queue SET Status = 'failed', Error = 'Network upload error' WHERE Id = ?;", -1, &updStmt, NULL) == SQLITE_OK) {
-        sqlite3_bind_text(updStmt, 1, [recordId UTF8String], -1, SQLITE_TRANSIENT);
+      if (sqlite3_prepare_v2(db, "UPDATE sync_queue SET Status = 'failed', Error = ? WHERE Id = ?;", -1, &updStmt, NULL) == SQLITE_OK) {
+        sqlite3_bind_text(updStmt, 1, [errorMessage UTF8String], -1, SQLITE_TRANSIENT);
+        sqlite3_bind_text(updStmt, 2, [recordId UTF8String], -1, SQLITE_TRANSIENT);
         sqlite3_step(updStmt);
         sqlite3_finalize(updStmt);
       }
@@ -1089,11 +1092,21 @@
       if (self.enableNotifications) {
         NSString *title = self.notificationTexts[@"failureTitle"] ?: @"Sync Suspended";
         NSString *bodyPattern = self.notificationTexts[@"failureBody"] ?: @"Sync paused: {error}. Will resume automatically.";
-        NSString *body = [bodyPattern stringByReplacingOccurrencesOfString:@"{error}" withString:@"Network upload error"];
+        NSString *body = [bodyPattern stringByReplacingOccurrencesOfString:@"{error}" withString:errorMessage];
         [self sendLocalNotificationWithTitle:title body:body isSilent:NO];
       }
-      [self broadcastEvent:@"failed" percentage:percentage completed:completedCount total:totalCount error:@"Network upload error"];
-      syncAborted = YES;
+      [self broadcastEvent:@"failed" percentage:percentage completed:completedCount total:totalCount error:errorMessage];
+
+      // Only a genuine connectivity failure (the request never reached the server) should
+      // abort the whole run. An HTTP error response means the server was reached and
+      // rejected this specific record — it's already marked "failed" above; let the loop
+      // continue so unrelated queued items still get attempted.
+      BOOL isConnectivityFailure = [errorMessage hasPrefix:@"Upload Exception:"] ||
+          [errorMessage hasPrefix:@"Handshake exception:"] ||
+          [errorMessage hasPrefix:@"Cloud upload Exception:"];
+      if (isConnectivityFailure) {
+        syncAborted = YES;
+      }
     }
 
     if (syncAborted) {
@@ -1196,7 +1209,15 @@
           [self sendLocalNotificationWithTitle:title body:body isSilent:NO];
         }
         [self broadcastEvent:@"failed_download" percentage:percentage completed:completedDownloadCount total:totalDownloadCount error:downloadError];
-        downloadAborted = YES;
+
+        // Only a genuine connectivity failure (the request never reached the server) should
+        // abort the whole run. An HTTP error response means the server was reached and
+        // rejected this specific record — it's already marked "failed" above; let the loop
+        // continue so unrelated queued items still get attempted.
+        BOOL isConnectivityFailure = [downloadError hasPrefix:@"Download Exception:"];
+        if (isConnectivityFailure) {
+          downloadAborted = YES;
+        }
       }
 
       if (downloadAborted) {
@@ -1234,7 +1255,11 @@
   }
 }
 
-- (BOOL)uploadItemWithPayload:(NSString *)payload endpoint:(NSString *)endpoint filePath:(NSString *)filePath {
+// Returns nil on success, or an error description on failure. A "Upload Exception:" prefix
+// means the request never reached the server (network/timeout/DNS) — a genuine connectivity
+// failure. An "HTTP $code:" prefix means the server was reached and responded with an error
+// status, which is specific to this one record.
+- (NSString *)uploadItemWithPayload:(NSString *)payload endpoint:(NSString *)endpoint filePath:(NSString *)filePath {
   NSString *fullUrlStr = [NSString stringWithFormat:@"%@/%@",
                        [self.serverUrl stringByTrimmingCharactersInSet:[NSCharacterSet characterSetWithCharactersInString:@"/"]],
                        [endpoint stringByTrimmingCharactersInSet:[NSCharacterSet characterSetWithCharactersInString:@"/"]]];
@@ -1295,11 +1320,13 @@
   NSData *bodyData = [NSJSONSerialization dataWithJSONObject:requestDict options:0 error:nil];
   [request setHTTPBody:bodyData];
 
+  __block NSData *responseData = nil;
   __block NSURLResponse *response = nil;
   __block NSError *error = nil;
   dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
 
   NSURLSessionDataTask *task = [[NSURLSession sharedSession] dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *r, NSError *e) {
+      responseData = data;
       response = r;
       error = e;
       dispatch_semaphore_signal(semaphore);
@@ -1309,24 +1336,37 @@
 
   if (error) {
     LogDebug(@"Error: Background Upload Request Failed: %@", error.localizedDescription);
-    return NO;
+    return [NSString stringWithFormat:@"Upload Exception: %@", error.localizedDescription];
   }
 
   NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
-  return (httpResponse.statusCode >= 200 && httpResponse.statusCode < 300);
+  if (httpResponse.statusCode >= 200 && httpResponse.statusCode < 300) {
+    return nil;
+  }
+
+  NSString *details = responseData ? [[NSString alloc] initWithData:responseData encoding:NSUTF8StringEncoding] : @"No details";
+  NSString *err = [NSString stringWithFormat:@"HTTP %ld: %@", (long)httpResponse.statusCode, details];
+  LogDebug(@"Error: Background Upload Request Failed: %@", err);
+  return err;
 }
 
-- (BOOL)uploadItemViaPresignedUrlWithPayload:(NSString *)payload endpoint:(NSString *)endpoint filePath:(NSString *)filePath {
+// Returns nil on success, or an error description on failure. "Handshake exception:" and
+// "Cloud upload Exception:" prefixes mean a request never reached the server — a genuine
+// connectivity failure. An "HTTP $code:" prefix means the server was reached and responded
+// with an error status, specific to this one record. "Local error:" prefixes mean the
+// problem is local to this device/record (missing file, malformed response) and isn't a
+// connectivity issue either.
+- (NSString *)uploadItemViaPresignedUrlWithPayload:(NSString *)payload endpoint:(NSString *)endpoint filePath:(NSString *)filePath {
   if (!filePath || filePath.length == 0) {
     LogDebug(@"Error: FilePath is required for Presigned URL strategy.");
-    return NO;
+    return @"Local error: FilePath is required for Presigned URL strategy.";
   }
 
   NSString *cleanPath = [filePath stringByReplacingOccurrencesOfString:@"file://" withString:@""];
   NSFileManager *fileManager = [NSFileManager defaultManager];
   if (![fileManager fileExistsAtPath:cleanPath]) {
     LogDebug(@"Error: Local file not found for Presigned URL upload: %@", cleanPath);
-    return NO;
+    return [NSString stringWithFormat:@"Local error: Local file not found at path: %@", cleanPath];
   }
 
   NSString *handshakeUrlStr = [NSString stringWithFormat:@"%@/%@",
@@ -1374,19 +1414,20 @@
 
   if (handshakeError) {
     LogDebug(@"Error: Presigned URL handshake failed: %@", handshakeError.localizedDescription);
-    return NO;
+    return [NSString stringWithFormat:@"Handshake exception: %@", handshakeError.localizedDescription];
   }
 
   NSHTTPURLResponse *httpHandshakeResponse = (NSHTTPURLResponse *)handshakeResponse;
   if (httpHandshakeResponse.statusCode < 200 || httpHandshakeResponse.statusCode >= 300) {
+    NSString *details = handshakeData ? [[NSString alloc] initWithData:handshakeData encoding:NSUTF8StringEncoding] : @"No details";
     LogDebug(@"Error: Handshake returned HTTP status %ld", (long)httpHandshakeResponse.statusCode);
-    return NO;
+    return [NSString stringWithFormat:@"HTTP %ld: %@", (long)httpHandshakeResponse.statusCode, details];
   }
 
   NSDictionary *responseJson = [NSJSONSerialization JSONObjectWithData:handshakeData options:0 error:nil];
   if (!responseJson || ![responseJson isKindOfClass:[NSDictionary class]]) {
     LogDebug(@"Error: Failed to parse handshake response JSON.");
-    return NO;
+    return @"Local error: Failed to parse handshake response JSON.";
   }
 
   NSString *uploadUrl = responseJson[@"uploadUrl"];
@@ -1395,7 +1436,7 @@
 
   if (!uploadUrl || uploadUrl.length == 0) {
     LogDebug(@"Error: Handshake response did not contain 'uploadUrl'.");
-    return NO;
+    return @"Local error: Handshake response did not contain 'uploadUrl'.";
   }
 
   LogDebug(@"[BG-SYNC-CLOUD] Starting direct streaming cloud upload on iOS: %@", uploadUrl);
@@ -1442,16 +1483,16 @@
 
   if (uploadError) {
     LogDebug(@"Error: Direct cloud upload request failed: %@", uploadError.localizedDescription);
-    return NO;
+    return [NSString stringWithFormat:@"Cloud upload Exception: %@", uploadError.localizedDescription];
   }
 
   NSHTTPURLResponse *httpUploadResponse = (NSHTTPURLResponse *)uploadResponse;
   if (httpUploadResponse.statusCode >= 200 && httpUploadResponse.statusCode < 300) {
     LogDebug(@"[BG-SYNC-CLOUD] Cloud upload completed successfully with HTTP status %ld", (long)httpUploadResponse.statusCode);
-    return YES;
+    return nil;
   } else {
     LogDebug(@"Error: Cloud upload request failed with HTTP status %ld", (long)httpUploadResponse.statusCode);
-    return NO;
+    return [NSString stringWithFormat:@"HTTP %ld: Cloud upload failed", (long)httpUploadResponse.statusCode];
   }
 }
 

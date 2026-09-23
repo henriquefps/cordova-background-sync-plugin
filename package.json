@@ -1,6 +1,6 @@
 {
   "name": "cordova-background-sync-plugin",
-  "version": "1.0.2-nocipher",
+  "version": "1.0.3-nocipher",
   "cordova_name": "BackgroundSyncPlugin",
   "description": "High-performance local SQLite storage background synchronization engine for hybrid mobile apps",
   "author": "Henrique Silva <contact@hfps.dev> (https://hfps.dev)",

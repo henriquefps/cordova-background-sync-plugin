@@ -228,17 +228,17 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                             updateNotificationFailure(uploadError)
                         }
                         BackgroundSyncPlugin.sendProgressUpdate("failed", percentage, completedCount - 1, totalCount, uploadError)
-                        syncAborted = true
 
-                        val isTransient = uploadError.startsWith("Upload Exception:") ||
-                                uploadError.contains("timeout", ignoreCase = true) ||
-                                uploadError.contains("connect", ignoreCase = true) ||
-                                uploadError.contains("host", ignoreCase = true) ||
-                                uploadError.contains("socket", ignoreCase = true) ||
-                                uploadError.contains("HTTP 503") ||
-                                uploadError.contains("HTTP 504")
-                        if (isTransient) {
+                        // Only a genuine connectivity failure (the request never reached the server)
+                        // should abort the whole run. An HTTP error response means the server was
+                        // reached and rejected this specific record — it's already marked "failed"
+                        // above; let the loop continue so unrelated queued items still get attempted.
+                        val isConnectivityFailure = uploadError.startsWith("Upload Exception:") ||
+                                uploadError.startsWith("Handshake exception:") ||
+                                uploadError.startsWith("Cloud upload Exception:")
+                        if (isConnectivityFailure) {
                             isTransientNetworkError = true
+                            syncAborted = true
                         }
                     }
 
@@ -322,17 +322,16 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                             updateNotificationFailure(downloadError, isDownload = true)
                         }
                         BackgroundSyncPlugin.sendProgressUpdate("failed_download", percentage, completedDownloadCount - 1, totalDownloadCount, downloadError)
-                        downloadAborted = true
 
-                        val isTransient = downloadError.startsWith("Download Exception:") ||
-                                downloadError.contains("timeout", ignoreCase = true) ||
-                                downloadError.contains("connect", ignoreCase = true) ||
-                                downloadError.contains("host", ignoreCase = true) ||
-                                downloadError.contains("socket", ignoreCase = true) ||
-                                downloadError.contains("HTTP 503") ||
-                                downloadError.contains("HTTP 504")
-                        if (isTransient) {
+                        // Only a genuine connectivity failure (the request never reached the server)
+                        // should abort the whole run. An HTTP error response means the server was
+                        // reached and rejected this specific record — it's already marked "failed"
+                        // above; let the loop continue so unrelated queued items still get attempted.
+                        val isConnectivityFailure = downloadError.startsWith("Download Exception:") ||
+                                downloadError.startsWith("File Download Exception:")
+                        if (isConnectivityFailure) {
                             isDownloadTransientNetworkError = true
+                            downloadAborted = true
                         }
                     }
 
