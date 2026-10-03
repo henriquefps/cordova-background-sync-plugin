@@ -1,0 +1,8 @@
+# Generated or downloaded, rebuilt by the scripts
+seed/sources/
+seed/out/
+seed/credits.json
+backoffice/data/
+app/dist/
+app/android/app/src/main/assets/public/
+video/node_modules/

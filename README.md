@@ -64,6 +64,21 @@ For enqueue/download payload shapes, event details, and server-side contracts, s
 
 ---
 
+## Example app
+
+[`examples/field-audit-demo/`](examples/field-audit-demo/) is a complete, runnable demo (Android only): a Capacitor audit app that queues 336 photos (418 MB) with `enqueueRecord` and `enqueueSync`, plus a zero-dependency Node backoffice that implements the [REST contract](docs/rest-api-signature.md) and fills a live photo grid as uploads arrive. It shows the sync continuing with the app in the background and the screen locked, and the queue resuming on its own after airplane mode. The app uses this repository's plugin directly (`file:../../..`).
+
+```sh
+cd examples/field-audit-demo
+python3 seed/fetch_sources.py --target 100 && python3 seed/generate_audit.py
+node backoffice/server.mjs &
+scripts/build.sh && scripts/seed-device.sh
+```
+
+Requirements, the full walkthrough and what was verified are in its [README](examples/field-audit-demo/README.md).
+
+---
+
 ## 📚 Technical Documentation
 
 All implementation details, API usage examples, and server configuration requirements are organized into modular technical guides:

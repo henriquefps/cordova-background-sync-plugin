@@ -1,0 +1,17 @@
+{
+  "appId": "com.hfps.fieldaudit",
+  "appName": "Fieldbook",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "http"
+  },
+  "android": {
+    "backgroundColor": "#f3f3ee"
+  },
+  "plugins": {
+    "SystemBars": {
+      "style": "LIGHT",
+      "insetsHandling": "css"
+    }
+  }
+}

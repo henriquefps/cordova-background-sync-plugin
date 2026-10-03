@@ -1,0 +1,3123 @@
+{
+ "audits": [
+  {
+   "id": "AUD-2026-0418",
+   "title": "Annual Mechanical Integrity Audit",
+   "site": "Northgate Process Plant",
+   "unit": "Units 2 to 5",
+   "client": "Northgate Chemicals",
+   "auditor": "Marta Lopes",
+   "date": "2026-10-01",
+   "status": "Ready to sync",
+   "findingCount": 42,
+   "photoCount": 336,
+   "totalBytes": 418184992,
+   "areas": [
+    {
+     "id": "pump-house",
+     "name": "Pump House P-100",
+     "location": "Building 4, ground floor",
+     "findings": [
+      {
+       "id": "F-01",
+       "title": "Mechanical seal leak on pump P-104B",
+       "severity": "major",
+       "note": "Product weeping at the seal gland, drip tray half full. Seal flush pressure below the value on the datasheet.",
+       "photos": [
+        {
+         "id": "AUD-2026-0418-F-01-01",
+         "file": "AUD-2026-0418-F-01-01.jpg",
+         "name": "IMG_20261001_084314.jpg",
+         "bytes": 1470408,
+         "takenAt": "2026-10-01T08:43:14",
+         "source": "src_011.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-01-02",
+         "file": "AUD-2026-0418-F-01-02.jpg",
+         "name": "IMG_20261001_084357.jpg",
+         "bytes": 1315273,
+         "takenAt": "2026-10-01T08:43:57",
+         "source": "src_011.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-01-03",
+         "file": "AUD-2026-0418-F-01-03.jpg",
+         "name": "IMG_20261001_084413.jpg",
+         "bytes": 1127617,
+         "takenAt": "2026-10-01T08:44:13",
+         "source": "src_011.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-01-04",
+         "file": "AUD-2026-0418-F-01-04.jpg",
+         "name": "IMG_20261001_084509.jpg",
+         "bytes": 1179273,
+         "takenAt": "2026-10-01T08:45:09",
+         "source": "src_011.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-01-05",
+         "file": "AUD-2026-0418-F-01-05.jpg",
+         "name": "IMG_20261001_084530.jpg",
+         "bytes": 1569633,
+         "takenAt": "2026-10-01T08:45:30",
+         "source": "src_011.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-01-06",
+         "file": "AUD-2026-0418-F-01-06.jpg",
+         "name": "IMG_20261001_084618.jpg",
+         "bytes": 1309337,
+         "takenAt": "2026-10-01T08:46:18",
+         "source": "src_011.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-01-07",
+         "file": "AUD-2026-0418-F-01-07.jpg",
+         "name": "IMG_20261001_084728.jpg",
+         "bytes": 1411444,
+         "takenAt": "2026-10-01T08:47:28",
+         "source": "src_006.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-01-08",
+         "file": "AUD-2026-0418-F-01-08.jpg",
+         "name": "IMG_20261001_084832.jpg",
+         "bytes": 1319751,
+         "takenAt": "2026-10-01T08:48:32",
+         "source": "src_006.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-01-09",
+         "file": "AUD-2026-0418-F-01-09.jpg",
+         "name": "IMG_20261001_084940.jpg",
+         "bytes": 1159497,
+         "takenAt": "2026-10-01T08:49:40",
+         "source": "src_006.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-01-10",
+         "file": "AUD-2026-0418-F-01-10.jpg",
+         "name": "IMG_20261001_085002.jpg",
+         "bytes": 1273971,
+         "takenAt": "2026-10-01T08:50:02",
+         "source": "src_006.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-01-11",
+         "file": "AUD-2026-0418-F-01-11.jpg",
+         "name": "IMG_20261001_085015.jpg",
+         "bytes": 1195530,
+         "takenAt": "2026-10-01T08:50:15",
+         "source": "src_006.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-01-12",
+         "file": "AUD-2026-0418-F-01-12.jpg",
+         "name": "IMG_20261001_085130.jpg",
+         "bytes": 1318744,
+         "takenAt": "2026-10-01T08:51:30",
+         "source": "src_006.jpg"
+        }
+       ]
+      },
+      {
+       "id": "F-02",
+       "title": "Coupling guard missing on pump P-102A",
+       "severity": "critical",
+       "note": "Guard removed during last maintenance and not refitted. Rotating coupling exposed at walkway height.",
+       "photos": [
+        {
+         "id": "AUD-2026-0418-F-02-01",
+         "file": "AUD-2026-0418-F-02-01.jpg",
+         "name": "IMG_20261001_090050.jpg",
+         "bytes": 1261028,
+         "takenAt": "2026-10-01T09:00:50",
+         "source": "src_003.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-02-02",
+         "file": "AUD-2026-0418-F-02-02.jpg",
+         "name": "IMG_20261001_090130.jpg",
+         "bytes": 1158685,
+         "takenAt": "2026-10-01T09:01:30",
+         "source": "src_003.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-02-03",
+         "file": "AUD-2026-0418-F-02-03.jpg",
+         "name": "IMG_20261001_090157.jpg",
+         "bytes": 1467661,
+         "takenAt": "2026-10-01T09:01:57",
+         "source": "src_003.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-02-04",
+         "file": "AUD-2026-0418-F-02-04.jpg",
+         "name": "IMG_20261001_090222.jpg",
+         "bytes": 1091468,
+         "takenAt": "2026-10-01T09:02:22",
+         "source": "src_003.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-02-05",
+         "file": "AUD-2026-0418-F-02-05.jpg",
+         "name": "IMG_20261001_090247.jpg",
+         "bytes": 1415444,
+         "takenAt": "2026-10-01T09:02:47",
+         "source": "src_003.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-02-06",
+         "file": "AUD-2026-0418-F-02-06.jpg",
+         "name": "IMG_20261001_090304.jpg",
+         "bytes": 1278552,
+         "takenAt": "2026-10-01T09:03:04",
+         "source": "src_014.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-02-07",
+         "file": "AUD-2026-0418-F-02-07.jpg",
+         "name": "IMG_20261001_090333.jpg",
+         "bytes": 1257475,
+         "takenAt": "2026-10-01T09:03:33",
+         "source": "src_014.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-02-08",
+         "file": "AUD-2026-0418-F-02-08.jpg",
+         "name": "IMG_20261001_090404.jpg",
+         "bytes": 1290289,
+         "takenAt": "2026-10-01T09:04:04",
+         "source": "src_014.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-02-09",
+         "file": "AUD-2026-0418-F-02-09.jpg",
+         "name": "IMG_20261001_090441.jpg",
+         "bytes": 1377502,
+         "takenAt": "2026-10-01T09:04:41",
+         "source": "src_014.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-02-10",
+         "file": "AUD-2026-0418-F-02-10.jpg",
+         "name": "IMG_20261001_090530.jpg",
+         "bytes": 1237443,
+         "takenAt": "2026-10-01T09:05:30",
+         "source": "src_014.jpg"
+        }
+       ]
+      },
+      {
+       "id": "F-03",
+       "title": "Pressure gauge PI-1041 unreadable",
+       "severity": "minor",
+       "note": "Gauge glass cracked and face fogged. Reading cannot be confirmed during rounds.",
+       "photos": [
+        {
+         "id": "AUD-2026-0418-F-03-01",
+         "file": "AUD-2026-0418-F-03-01.jpg",
+         "name": "IMG_20261001_090741.jpg",
+         "bytes": 1267478,
+         "takenAt": "2026-10-01T09:07:41",
+         "source": "src_066.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-03-02",
+         "file": "AUD-2026-0418-F-03-02.jpg",
+         "name": "IMG_20261001_090815.jpg",
+         "bytes": 1221403,
+         "takenAt": "2026-10-01T09:08:15",
+         "source": "src_066.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-03-03",
+         "file": "AUD-2026-0418-F-03-03.jpg",
+         "name": "IMG_20261001_090844.jpg",
+         "bytes": 1272766,
+         "takenAt": "2026-10-01T09:08:44",
+         "source": "src_066.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-03-04",
+         "file": "AUD-2026-0418-F-03-04.jpg",
+         "name": "IMG_20261001_090914.jpg",
+         "bytes": 1095193,
+         "takenAt": "2026-10-01T09:09:14",
+         "source": "src_066.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-03-05",
+         "file": "AUD-2026-0418-F-03-05.jpg",
+         "name": "IMG_20261001_090924.jpg",
+         "bytes": 1249663,
+         "takenAt": "2026-10-01T09:09:24",
+         "source": "src_066.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-03-06",
+         "file": "AUD-2026-0418-F-03-06.jpg",
+         "name": "IMG_20261001_090944.jpg",
+         "bytes": 1066066,
+         "takenAt": "2026-10-01T09:09:44",
+         "source": "src_066.jpg"
+        }
+       ]
+      },
+      {
+       "id": "F-04",
+       "title": "Corrosion at baseplate anchor bolts",
+       "severity": "minor",
+       "note": "Surface rust and section loss on two of four anchor bolts of P-103.",
+       "photos": [
+        {
+         "id": "AUD-2026-0418-F-04-01",
+         "file": "AUD-2026-0418-F-04-01.jpg",
+         "name": "IMG_20261001_091950.jpg",
+         "bytes": 1623857,
+         "takenAt": "2026-10-01T09:19:50",
+         "source": "src_012.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-04-02",
+         "file": "AUD-2026-0418-F-04-02.jpg",
+         "name": "IMG_20261001_092034.jpg",
+         "bytes": 1328568,
+         "takenAt": "2026-10-01T09:20:34",
+         "source": "src_012.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-04-03",
+         "file": "AUD-2026-0418-F-04-03.jpg",
+         "name": "IMG_20261001_092126.jpg",
+         "bytes": 1165012,
+         "takenAt": "2026-10-01T09:21:26",
+         "source": "src_012.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-04-04",
+         "file": "AUD-2026-0418-F-04-04.jpg",
+         "name": "IMG_20261001_092142.jpg",
+         "bytes": 1239968,
+         "takenAt": "2026-10-01T09:21:42",
+         "source": "src_012.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-04-05",
+         "file": "AUD-2026-0418-F-04-05.jpg",
+         "name": "IMG_20261001_092159.jpg",
+         "bytes": 1088246,
+         "takenAt": "2026-10-01T09:21:59",
+         "source": "src_067.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-04-06",
+         "file": "AUD-2026-0418-F-04-06.jpg",
+         "name": "IMG_20261001_092228.jpg",
+         "bytes": 1437831,
+         "takenAt": "2026-10-01T09:22:28",
+         "source": "src_067.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-04-07",
+         "file": "AUD-2026-0418-F-04-07.jpg",
+         "name": "IMG_20261001_092308.jpg",
+         "bytes": 1249067,
+         "takenAt": "2026-10-01T09:23:08",
+         "source": "src_067.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-04-08",
+         "file": "AUD-2026-0418-F-04-08.jpg",
+         "name": "IMG_20261001_092327.jpg",
+         "bytes": 1226607,
+         "takenAt": "2026-10-01T09:23:27",
+         "source": "src_067.jpg"
+        }
+       ]
+      },
+      {
+       "id": "F-05",
+       "title": "Vibration route tags out of date",
+       "severity": "observation",
+       "note": "Route tags show readings from the previous quarter. Data in the CMMS is current.",
+       "photos": [
+        {
+         "id": "AUD-2026-0418-F-05-01",
+         "file": "AUD-2026-0418-F-05-01.jpg",
+         "name": "IMG_20261001_093108.jpg",
+         "bytes": 1209459,
+         "takenAt": "2026-10-01T09:31:08",
+         "source": "src_065.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-05-02",
+         "file": "AUD-2026-0418-F-05-02.jpg",
+         "name": "IMG_20261001_093200.jpg",
+         "bytes": 1429286,
+         "takenAt": "2026-10-01T09:32:00",
+         "source": "src_065.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-05-03",
+         "file": "AUD-2026-0418-F-05-03.jpg",
+         "name": "IMG_20261001_093225.jpg",
+         "bytes": 1378478,
+         "takenAt": "2026-10-01T09:32:25",
+         "source": "src_065.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-05-04",
+         "file": "AUD-2026-0418-F-05-04.jpg",
+         "name": "IMG_20261001_093309.jpg",
+         "bytes": 994572,
+         "takenAt": "2026-10-01T09:33:09",
+         "source": "src_065.jpg"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "pipe-rack",
+     "name": "Pipe Rack A",
+     "location": "Between Units 2 and 3, elevation +6 m",
+     "findings": [
+      {
+       "id": "F-06",
+       "title": "External corrosion at support shoe, line 6\"-P-2104",
+       "severity": "major",
+       "note": "Pitting where the pipe rests on the shoe. Wall loss suspected, UT thickness check requested.",
+       "photos": [
+        {
+         "id": "AUD-2026-0418-F-06-01",
+         "file": "AUD-2026-0418-F-06-01.jpg",
+         "name": "IMG_20261001_095357.jpg",
+         "bytes": 1313356,
+         "takenAt": "2026-10-01T09:53:57",
+         "source": "src_005.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-06-02",
+         "file": "AUD-2026-0418-F-06-02.jpg",
+         "name": "IMG_20261001_095431.jpg",
+         "bytes": 1078968,
+         "takenAt": "2026-10-01T09:54:31",
+         "source": "src_005.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-06-03",
+         "file": "AUD-2026-0418-F-06-03.jpg",
+         "name": "IMG_20261001_095524.jpg",
+         "bytes": 1146029,
+         "takenAt": "2026-10-01T09:55:24",
+         "source": "src_005.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-06-04",
+         "file": "AUD-2026-0418-F-06-04.jpg",
+         "name": "IMG_20261001_095629.jpg",
+         "bytes": 1105629,
+         "takenAt": "2026-10-01T09:56:29",
+         "source": "src_005.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-06-05",
+         "file": "AUD-2026-0418-F-06-05.jpg",
+         "name": "IMG_20261001_095654.jpg",
+         "bytes": 1002557,
+         "takenAt": "2026-10-01T09:56:54",
+         "source": "src_005.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-06-06",
+         "file": "AUD-2026-0418-F-06-06.jpg",
+         "name": "IMG_20261001_095711.jpg",
+         "bytes": 1333901,
+         "takenAt": "2026-10-01T09:57:11",
+         "source": "src_005.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-06-07",
+         "file": "AUD-2026-0418-F-06-07.jpg",
+         "name": "IMG_20261001_095724.jpg",
+         "bytes": 1162725,
+         "takenAt": "2026-10-01T09:57:24",
+         "source": "src_005.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-06-08",
+         "file": "AUD-2026-0418-F-06-08.jpg",
+         "name": "IMG_20261001_095821.jpg",
+         "bytes": 1435617,
+         "takenAt": "2026-10-01T09:58:21",
+         "source": "src_003.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-06-09",
+         "file": "AUD-2026-0418-F-06-09.jpg",
+         "name": "IMG_20261001_095909.jpg",
+         "bytes": 1445211,
+         "takenAt": "2026-10-01T09:59:09",
+         "source": "src_003.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-06-10",
+         "file": "AUD-2026-0418-F-06-10.jpg",
+         "name": "IMG_20261001_095937.jpg",
+         "bytes": 1222520,
+         "takenAt": "2026-10-01T09:59:37",
+         "source": "src_003.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-06-11",
+         "file": "AUD-2026-0418-F-06-11.jpg",
+         "name": "IMG_20261001_100041.jpg",
+         "bytes": 1362935,
+         "takenAt": "2026-10-01T10:00:41",
+         "source": "src_003.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-06-12",
+         "file": "AUD-2026-0418-F-06-12.jpg",
+         "name": "IMG_20261001_100153.jpg",
+         "bytes": 1278176,
+         "takenAt": "2026-10-01T10:01:53",
+         "source": "src_003.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-06-13",
+         "file": "AUD-2026-0418-F-06-13.jpg",
+         "name": "IMG_20261001_100301.jpg",
+         "bytes": 1143377,
+         "takenAt": "2026-10-01T10:03:01",
+         "source": "src_003.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-06-14",
+         "file": "AUD-2026-0418-F-06-14.jpg",
+         "name": "IMG_20261001_100337.jpg",
+         "bytes": 1342463,
+         "takenAt": "2026-10-01T10:03:37",
+         "source": "src_003.jpg"
+        }
+       ]
+      },
+      {
+       "id": "F-07",
+       "title": "Damaged and wet insulation on steam line",
+       "severity": "major",
+       "note": "Cladding split over 1.5 m, insulation saturated. Risk of corrosion under insulation.",
+       "photos": [
+        {
+         "id": "AUD-2026-0418-F-07-01",
+         "file": "AUD-2026-0418-F-07-01.jpg",
+         "name": "IMG_20261001_100907.jpg",
+         "bytes": 1235890,
+         "takenAt": "2026-10-01T10:09:07",
+         "source": "src_012.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-07-02",
+         "file": "AUD-2026-0418-F-07-02.jpg",
+         "name": "IMG_20261001_100938.jpg",
+         "bytes": 1221550,
+         "takenAt": "2026-10-01T10:09:38",
+         "source": "src_012.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-07-03",
+         "file": "AUD-2026-0418-F-07-03.jpg",
+         "name": "IMG_20261001_101040.jpg",
+         "bytes": 1235879,
+         "takenAt": "2026-10-01T10:10:40",
+         "source": "src_012.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-07-04",
+         "file": "AUD-2026-0418-F-07-04.jpg",
+         "name": "IMG_20261001_101124.jpg",
+         "bytes": 1443907,
+         "takenAt": "2026-10-01T10:11:24",
+         "source": "src_012.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-07-05",
+         "file": "AUD-2026-0418-F-07-05.jpg",
+         "name": "IMG_20261001_101135.jpg",
+         "bytes": 1210999,
+         "takenAt": "2026-10-01T10:11:35",
+         "source": "src_012.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-07-06",
+         "file": "AUD-2026-0418-F-07-06.jpg",
+         "name": "IMG_20261001_101204.jpg",
+         "bytes": 1122569,
+         "takenAt": "2026-10-01T10:12:04",
+         "source": "src_012.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-07-07",
+         "file": "AUD-2026-0418-F-07-07.jpg",
+         "name": "IMG_20261001_101300.jpg",
+         "bytes": 1075057,
+         "takenAt": "2026-10-01T10:13:00",
+         "source": "src_067.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-07-08",
+         "file": "AUD-2026-0418-F-07-08.jpg",
+         "name": "IMG_20261001_101351.jpg",
+         "bytes": 1313822,
+         "takenAt": "2026-10-01T10:13:51",
+         "source": "src_067.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-07-09",
+         "file": "AUD-2026-0418-F-07-09.jpg",
+         "name": "IMG_20261001_101403.jpg",
+         "bytes": 1270200,
+         "takenAt": "2026-10-01T10:14:03",
+         "source": "src_067.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-07-10",
+         "file": "AUD-2026-0418-F-07-10.jpg",
+         "name": "IMG_20261001_101414.jpg",
+         "bytes": 1122458,
+         "takenAt": "2026-10-01T10:14:14",
+         "source": "src_067.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-07-11",
+         "file": "AUD-2026-0418-F-07-11.jpg",
+         "name": "IMG_20261001_101441.jpg",
+         "bytes": 1353668,
+         "takenAt": "2026-10-01T10:14:41",
+         "source": "src_067.jpg"
+        }
+       ]
+      },
+      {
+       "id": "F-08",
+       "title": "Short bolt engagement on flange FL-2231",
+       "severity": "minor",
+       "note": "Two studs do not show full thread engagement through the nut.",
+       "photos": [
+        {
+         "id": "AUD-2026-0418-F-08-01",
+         "file": "AUD-2026-0418-F-08-01.jpg",
+         "name": "IMG_20261001_102129.jpg",
+         "bytes": 1393546,
+         "takenAt": "2026-10-01T10:21:29",
+         "source": "src_007.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-08-02",
+         "file": "AUD-2026-0418-F-08-02.jpg",
+         "name": "IMG_20261001_102156.jpg",
+         "bytes": 1428286,
+         "takenAt": "2026-10-01T10:21:56",
+         "source": "src_007.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-08-03",
+         "file": "AUD-2026-0418-F-08-03.jpg",
+         "name": "IMG_20261001_102209.jpg",
+         "bytes": 1483609,
+         "takenAt": "2026-10-01T10:22:09",
+         "source": "src_007.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-08-04",
+         "file": "AUD-2026-0418-F-08-04.jpg",
+         "name": "IMG_20261001_102235.jpg",
+         "bytes": 1280912,
+         "takenAt": "2026-10-01T10:22:35",
+         "source": "src_007.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-08-05",
+         "file": "AUD-2026-0418-F-08-05.jpg",
+         "name": "IMG_20261001_102315.jpg",
+         "bytes": 847005,
+         "takenAt": "2026-10-01T10:23:15",
+         "source": "src_007.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-08-06",
+         "file": "AUD-2026-0418-F-08-06.jpg",
+         "name": "IMG_20261001_102349.jpg",
+         "bytes": 1334900,
+         "takenAt": "2026-10-01T10:23:49",
+         "source": "src_007.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-08-07",
+         "file": "AUD-2026-0418-F-08-07.jpg",
+         "name": "IMG_20261001_102420.jpg",
+         "bytes": 1435517,
+         "takenAt": "2026-10-01T10:24:20",
+         "source": "src_007.jpg"
+        }
+       ]
+      },
+      {
+       "id": "F-09",
+       "title": "Handwheel missing on isolation valve HV-2210",
+       "severity": "minor",
+       "note": "Valve operated with a cheater bar. Handwheel found on the rack floor.",
+       "photos": [
+        {
+         "id": "AUD-2026-0418-F-09-01",
+         "file": "AUD-2026-0418-F-09-01.jpg",
+         "name": "IMG_20261001_103235.jpg",
+         "bytes": 1331977,
+         "takenAt": "2026-10-01T10:32:35",
+         "source": "src_069.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-09-02",
+         "file": "AUD-2026-0418-F-09-02.jpg",
+         "name": "IMG_20261001_103336.jpg",
+         "bytes": 1333815,
+         "takenAt": "2026-10-01T10:33:36",
+         "source": "src_069.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-09-03",
+         "file": "AUD-2026-0418-F-09-03.jpg",
+         "name": "IMG_20261001_103435.jpg",
+         "bytes": 1394006,
+         "takenAt": "2026-10-01T10:34:35",
+         "source": "src_069.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-09-04",
+         "file": "AUD-2026-0418-F-09-04.jpg",
+         "name": "IMG_20261001_103448.jpg",
+         "bytes": 1326381,
+         "takenAt": "2026-10-01T10:34:48",
+         "source": "src_069.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-09-05",
+         "file": "AUD-2026-0418-F-09-05.jpg",
+         "name": "IMG_20261001_103549.jpg",
+         "bytes": 1276352,
+         "takenAt": "2026-10-01T10:35:49",
+         "source": "src_069.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-09-06",
+         "file": "AUD-2026-0418-F-09-06.jpg",
+         "name": "IMG_20261001_103703.jpg",
+         "bytes": 1466162,
+         "takenAt": "2026-10-01T10:37:03",
+         "source": "src_069.jpg"
+        }
+       ]
+      },
+      {
+       "id": "F-10",
+       "title": "Faded line identification labels",
+       "severity": "observation",
+       "note": "Flow direction and service labels illegible on four lines near the battery limit.",
+       "photos": [
+        {
+         "id": "AUD-2026-0418-F-10-01",
+         "file": "AUD-2026-0418-F-10-01.jpg",
+         "name": "IMG_20261001_104405.jpg",
+         "bytes": 1299489,
+         "takenAt": "2026-10-01T10:44:05",
+         "source": "src_014.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-10-02",
+         "file": "AUD-2026-0418-F-10-02.jpg",
+         "name": "IMG_20261001_104515.jpg",
+         "bytes": 1278778,
+         "takenAt": "2026-10-01T10:45:15",
+         "source": "src_014.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-10-03",
+         "file": "AUD-2026-0418-F-10-03.jpg",
+         "name": "IMG_20261001_104623.jpg",
+         "bytes": 1402589,
+         "takenAt": "2026-10-01T10:46:23",
+         "source": "src_014.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-10-04",
+         "file": "AUD-2026-0418-F-10-04.jpg",
+         "name": "IMG_20261001_104729.jpg",
+         "bytes": 1155885,
+         "takenAt": "2026-10-01T10:47:29",
+         "source": "src_014.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-10-05",
+         "file": "AUD-2026-0418-F-10-05.jpg",
+         "name": "IMG_20261001_104821.jpg",
+         "bytes": 1049211,
+         "takenAt": "2026-10-01T10:48:21",
+         "source": "src_014.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-10-06",
+         "file": "AUD-2026-0418-F-10-06.jpg",
+         "name": "IMG_20261001_104925.jpg",
+         "bytes": 1102103,
+         "takenAt": "2026-10-01T10:49:25",
+         "source": "src_014.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-10-07",
+         "file": "AUD-2026-0418-F-10-07.jpg",
+         "name": "IMG_20261001_104944.jpg",
+         "bytes": 1090135,
+         "takenAt": "2026-10-01T10:49:44",
+         "source": "src_014.jpg"
+        }
+       ]
+      },
+      {
+       "id": "F-11",
+       "title": "Temporary hose left connected",
+       "severity": "major",
+       "note": "Utility hose connected to a drain point with no tag or permit reference.",
+       "photos": [
+        {
+         "id": "AUD-2026-0418-F-11-01",
+         "file": "AUD-2026-0418-F-11-01.jpg",
+         "name": "IMG_20261001_105245.jpg",
+         "bytes": 1162866,
+         "takenAt": "2026-10-01T10:52:45",
+         "source": "src_004.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-11-02",
+         "file": "AUD-2026-0418-F-11-02.jpg",
+         "name": "IMG_20261001_105258.jpg",
+         "bytes": 1105060,
+         "takenAt": "2026-10-01T10:52:58",
+         "source": "src_004.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-11-03",
+         "file": "AUD-2026-0418-F-11-03.jpg",
+         "name": "IMG_20261001_105346.jpg",
+         "bytes": 1373082,
+         "takenAt": "2026-10-01T10:53:46",
+         "source": "src_004.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-11-04",
+         "file": "AUD-2026-0418-F-11-04.jpg",
+         "name": "IMG_20261001_105409.jpg",
+         "bytes": 1259773,
+         "takenAt": "2026-10-01T10:54:09",
+         "source": "src_004.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-11-05",
+         "file": "AUD-2026-0418-F-11-05.jpg",
+         "name": "IMG_20261001_105508.jpg",
+         "bytes": 1561294,
+         "takenAt": "2026-10-01T10:55:08",
+         "source": "src_065.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-11-06",
+         "file": "AUD-2026-0418-F-11-06.jpg",
+         "name": "IMG_20261001_105559.jpg",
+         "bytes": 1265304,
+         "takenAt": "2026-10-01T10:55:59",
+         "source": "src_065.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-11-07",
+         "file": "AUD-2026-0418-F-11-07.jpg",
+         "name": "IMG_20261001_105649.jpg",
+         "bytes": 1156465,
+         "takenAt": "2026-10-01T10:56:49",
+         "source": "src_065.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-11-08",
+         "file": "AUD-2026-0418-F-11-08.jpg",
+         "name": "IMG_20261001_105801.jpg",
+         "bytes": 1411378,
+         "takenAt": "2026-10-01T10:58:01",
+         "source": "src_065.jpg"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "tank-farm",
+     "name": "Tank Farm",
+     "location": "Bund 3, tanks T-301 to T-304",
+     "findings": [
+      {
+       "id": "F-12",
+       "title": "Crack in bund wall near drain valve",
+       "severity": "major",
+       "note": "Vertical crack about 40 cm long. Bund integrity cannot be guaranteed until repaired.",
+       "photos": [
+        {
+         "id": "AUD-2026-0418-F-12-01",
+         "file": "AUD-2026-0418-F-12-01.jpg",
+         "name": "IMG_20261001_111855.jpg",
+         "bytes": 1177476,
+         "takenAt": "2026-10-01T11:18:55",
+         "source": "src_005.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-12-02",
+         "file": "AUD-2026-0418-F-12-02.jpg",
+         "name": "IMG_20261001_111921.jpg",
+         "bytes": 1201693,
+         "takenAt": "2026-10-01T11:19:21",
+         "source": "src_005.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-12-03",
+         "file": "AUD-2026-0418-F-12-03.jpg",
+         "name": "IMG_20261001_112007.jpg",
+         "bytes": 1097380,
+         "takenAt": "2026-10-01T11:20:07",
+         "source": "src_005.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-12-04",
+         "file": "AUD-2026-0418-F-12-04.jpg",
+         "name": "IMG_20261001_112020.jpg",
+         "bytes": 1017210,
+         "takenAt": "2026-10-01T11:20:20",
+         "source": "src_005.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-12-05",
+         "file": "AUD-2026-0418-F-12-05.jpg",
+         "name": "IMG_20261001_112050.jpg",
+         "bytes": 1145505,
+         "takenAt": "2026-10-01T11:20:50",
+         "source": "src_005.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-12-06",
+         "file": "AUD-2026-0418-F-12-06.jpg",
+         "name": "IMG_20261001_112203.jpg",
+         "bytes": 1140909,
+         "takenAt": "2026-10-01T11:22:03",
+         "source": "src_003.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-12-07",
+         "file": "AUD-2026-0418-F-12-07.jpg",
+         "name": "IMG_20261001_112303.jpg",
+         "bytes": 1167719,
+         "takenAt": "2026-10-01T11:23:03",
+         "source": "src_003.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-12-08",
+         "file": "AUD-2026-0418-F-12-08.jpg",
+         "name": "IMG_20261001_112412.jpg",
+         "bytes": 1102065,
+         "takenAt": "2026-10-01T11:24:12",
+         "source": "src_003.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-12-09",
+         "file": "AUD-2026-0418-F-12-09.jpg",
+         "name": "IMG_20261001_112504.jpg",
+         "bytes": 1356011,
+         "takenAt": "2026-10-01T11:25:04",
+         "source": "src_003.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-12-10",
+         "file": "AUD-2026-0418-F-12-10.jpg",
+         "name": "IMG_20261001_112513.jpg",
+         "bytes": 1295109,
+         "takenAt": "2026-10-01T11:25:13",
+         "source": "src_003.jpg"
+        }
+       ]
+      },
+      {
+       "id": "F-13",
+       "title": "Bund drain valve found open",
+       "severity": "critical",
+       "note": "Drain valve DV-31 open with no one attending. Closed and locked on the spot, reported to the shift lead.",
+       "photos": [
+        {
+         "id": "AUD-2026-0418-F-13-01",
+         "file": "AUD-2026-0418-F-13-01.jpg",
+         "name": "IMG_20261001_113504.jpg",
+         "bytes": 1337913,
+         "takenAt": "2026-10-01T11:35:04",
+         "source": "src_066.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-13-02",
+         "file": "AUD-2026-0418-F-13-02.jpg",
+         "name": "IMG_20261001_113606.jpg",
+         "bytes": 1158840,
+         "takenAt": "2026-10-01T11:36:06",
+         "source": "src_066.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-13-03",
+         "file": "AUD-2026-0418-F-13-03.jpg",
+         "name": "IMG_20261001_113704.jpg",
+         "bytes": 1227178,
+         "takenAt": "2026-10-01T11:37:04",
+         "source": "src_066.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-13-04",
+         "file": "AUD-2026-0418-F-13-04.jpg",
+         "name": "IMG_20261001_113724.jpg",
+         "bytes": 1156150,
+         "takenAt": "2026-10-01T11:37:24",
+         "source": "src_066.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-13-05",
+         "file": "AUD-2026-0418-F-13-05.jpg",
+         "name": "IMG_20261001_113736.jpg",
+         "bytes": 1311817,
+         "takenAt": "2026-10-01T11:37:36",
+         "source": "src_066.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-13-06",
+         "file": "AUD-2026-0418-F-13-06.jpg",
+         "name": "IMG_20261001_113838.jpg",
+         "bytes": 1204832,
+         "takenAt": "2026-10-01T11:38:38",
+         "source": "src_066.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-13-07",
+         "file": "AUD-2026-0418-F-13-07.jpg",
+         "name": "IMG_20261001_113935.jpg",
+         "bytes": 1265306,
+         "takenAt": "2026-10-01T11:39:35",
+         "source": "src_066.jpg"
+        }
+       ]
+      },
+      {
+       "id": "F-14",
+       "title": "Level gauge on T-301 differs from DCS",
+       "severity": "minor",
+       "note": "Local gauge reads 62%, DCS shows 58%. Calibration requested.",
+       "photos": [
+        {
+         "id": "AUD-2026-0418-F-14-01",
+         "file": "AUD-2026-0418-F-14-01.jpg",
+         "name": "IMG_20261001_114642.jpg",
+         "bytes": 966673,
+         "takenAt": "2026-10-01T11:46:42",
+         "source": "src_036.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-14-02",
+         "file": "AUD-2026-0418-F-14-02.jpg",
+         "name": "IMG_20261001_114708.jpg",
+         "bytes": 1199877,
+         "takenAt": "2026-10-01T11:47:08",
+         "source": "src_036.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-14-03",
+         "file": "AUD-2026-0418-F-14-03.jpg",
+         "name": "IMG_20261001_114805.jpg",
+         "bytes": 1262855,
+         "takenAt": "2026-10-01T11:48:05",
+         "source": "src_036.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-14-04",
+         "file": "AUD-2026-0418-F-14-04.jpg",
+         "name": "IMG_20261001_114912.jpg",
+         "bytes": 1247564,
+         "takenAt": "2026-10-01T11:49:12",
+         "source": "src_036.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-14-05",
+         "file": "AUD-2026-0418-F-14-05.jpg",
+         "name": "IMG_20261001_115022.jpg",
+         "bytes": 1291690,
+         "takenAt": "2026-10-01T11:50:22",
+         "source": "src_036.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-14-06",
+         "file": "AUD-2026-0418-F-14-06.jpg",
+         "name": "IMG_20261001_115107.jpg",
+         "bytes": 1422430,
+         "takenAt": "2026-10-01T11:51:07",
+         "source": "src_036.jpg"
+        }
+       ]
+      },
+      {
+       "id": "F-15",
+       "title": "Vent screen clogged on T-303",
+       "severity": "minor",
+       "note": "Bird debris on the vent screen. Risk of vacuum during pump-out.",
+       "photos": [
+        {
+         "id": "AUD-2026-0418-F-15-01",
+         "file": "AUD-2026-0418-F-15-01.jpg",
+         "name": "IMG_20261001_115528.jpg",
+         "bytes": 1267341,
+         "takenAt": "2026-10-01T11:55:28",
+         "source": "src_065.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-15-02",
+         "file": "AUD-2026-0418-F-15-02.jpg",
+         "name": "IMG_20261001_115607.jpg",
+         "bytes": 1226871,
+         "takenAt": "2026-10-01T11:56:07",
+         "source": "src_065.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-15-03",
+         "file": "AUD-2026-0418-F-15-03.jpg",
+         "name": "IMG_20261001_115703.jpg",
+         "bytes": 1196681,
+         "takenAt": "2026-10-01T11:57:03",
+         "source": "src_065.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-15-04",
+         "file": "AUD-2026-0418-F-15-04.jpg",
+         "name": "IMG_20261001_115735.jpg",
+         "bytes": 1303940,
+         "takenAt": "2026-10-01T11:57:35",
+         "source": "src_065.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-15-05",
+         "file": "AUD-2026-0418-F-15-05.jpg",
+         "name": "IMG_20261001_115805.jpg",
+         "bytes": 1248260,
+         "takenAt": "2026-10-01T11:58:05",
+         "source": "src_065.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-15-06",
+         "file": "AUD-2026-0418-F-15-06.jpg",
+         "name": "IMG_20261001_115903.jpg",
+         "bytes": 1396338,
+         "takenAt": "2026-10-01T11:59:03",
+         "source": "src_065.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-15-07",
+         "file": "AUD-2026-0418-F-15-07.jpg",
+         "name": "IMG_20261001_115916.jpg",
+         "bytes": 1276201,
+         "takenAt": "2026-10-01T11:59:16",
+         "source": "src_065.jpg"
+        }
+       ]
+      },
+      {
+       "id": "F-16",
+       "title": "Coating breakdown on lower shell course",
+       "severity": "observation",
+       "note": "Coating failure in patches on the north side. No active corrosion yet.",
+       "photos": [
+        {
+         "id": "AUD-2026-0418-F-16-01",
+         "file": "AUD-2026-0418-F-16-01.jpg",
+         "name": "IMG_20261001_120714.jpg",
+         "bytes": 1456936,
+         "takenAt": "2026-10-01T12:07:14",
+         "source": "src_012.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-16-02",
+         "file": "AUD-2026-0418-F-16-02.jpg",
+         "name": "IMG_20261001_120820.jpg",
+         "bytes": 1351844,
+         "takenAt": "2026-10-01T12:08:20",
+         "source": "src_012.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-16-03",
+         "file": "AUD-2026-0418-F-16-03.jpg",
+         "name": "IMG_20261001_120921.jpg",
+         "bytes": 1158988,
+         "takenAt": "2026-10-01T12:09:21",
+         "source": "src_012.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-16-04",
+         "file": "AUD-2026-0418-F-16-04.jpg",
+         "name": "IMG_20261001_121030.jpg",
+         "bytes": 1259615,
+         "takenAt": "2026-10-01T12:10:30",
+         "source": "src_012.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-16-05",
+         "file": "AUD-2026-0418-F-16-05.jpg",
+         "name": "IMG_20261001_121110.jpg",
+         "bytes": 916923,
+         "takenAt": "2026-10-01T12:11:10",
+         "source": "src_012.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-16-06",
+         "file": "AUD-2026-0418-F-16-06.jpg",
+         "name": "IMG_20261001_121136.jpg",
+         "bytes": 1207740,
+         "takenAt": "2026-10-01T12:11:36",
+         "source": "src_011.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-16-07",
+         "file": "AUD-2026-0418-F-16-07.jpg",
+         "name": "IMG_20261001_121251.jpg",
+         "bytes": 934985,
+         "takenAt": "2026-10-01T12:12:51",
+         "source": "src_011.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-16-08",
+         "file": "AUD-2026-0418-F-16-08.jpg",
+         "name": "IMG_20261001_121308.jpg",
+         "bytes": 1074661,
+         "takenAt": "2026-10-01T12:13:08",
+         "source": "src_011.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-16-09",
+         "file": "AUD-2026-0418-F-16-09.jpg",
+         "name": "IMG_20261001_121420.jpg",
+         "bytes": 1578681,
+         "takenAt": "2026-10-01T12:14:20",
+         "source": "src_011.jpg"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "electrical",
+     "name": "Substation and MCC Room",
+     "location": "Building 7, MCC-2",
+     "findings": [
+      {
+       "id": "F-17",
+       "title": "Overfilled cable tray",
+       "severity": "minor",
+       "note": "Cables above the tray side rails along 3 m of the main run.",
+       "photos": [
+        {
+         "id": "AUD-2026-0418-F-17-01",
+         "file": "AUD-2026-0418-F-17-01.jpg",
+         "name": "IMG_20261001_123756.jpg",
+         "bytes": 1140337,
+         "takenAt": "2026-10-01T12:37:56",
+         "source": "src_023.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-17-02",
+         "file": "AUD-2026-0418-F-17-02.jpg",
+         "name": "IMG_20261001_123826.jpg",
+         "bytes": 928640,
+         "takenAt": "2026-10-01T12:38:26",
+         "source": "src_023.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-17-03",
+         "file": "AUD-2026-0418-F-17-03.jpg",
+         "name": "IMG_20261001_123906.jpg",
+         "bytes": 1262151,
+         "takenAt": "2026-10-01T12:39:06",
+         "source": "src_023.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-17-04",
+         "file": "AUD-2026-0418-F-17-04.jpg",
+         "name": "IMG_20261001_123923.jpg",
+         "bytes": 1240504,
+         "takenAt": "2026-10-01T12:39:23",
+         "source": "src_023.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-17-05",
+         "file": "AUD-2026-0418-F-17-05.jpg",
+         "name": "IMG_20261001_123956.jpg",
+         "bytes": 1286065,
+         "takenAt": "2026-10-01T12:39:56",
+         "source": "src_018.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-17-06",
+         "file": "AUD-2026-0418-F-17-06.jpg",
+         "name": "IMG_20261001_124059.jpg",
+         "bytes": 1234824,
+         "takenAt": "2026-10-01T12:40:59",
+         "source": "src_018.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-17-07",
+         "file": "AUD-2026-0418-F-17-07.jpg",
+         "name": "IMG_20261001_124209.jpg",
+         "bytes": 1235370,
+         "takenAt": "2026-10-01T12:42:09",
+         "source": "src_018.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-17-08",
+         "file": "AUD-2026-0418-F-17-08.jpg",
+         "name": "IMG_20261001_124310.jpg",
+         "bytes": 1213790,
+         "takenAt": "2026-10-01T12:43:10",
+         "source": "src_018.jpg"
+        }
+       ]
+      },
+      {
+       "id": "F-18",
+       "title": "Panel door left open on MCC-2 section 4",
+       "severity": "major",
+       "note": "Door open with the latch broken. Enclosure rating compromised.",
+       "photos": [
+        {
+         "id": "AUD-2026-0418-F-18-01",
+         "file": "AUD-2026-0418-F-18-01.jpg",
+         "name": "IMG_20261001_125231.jpg",
+         "bytes": 1129659,
+         "takenAt": "2026-10-01T12:52:31",
+         "source": "src_078.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-18-02",
+         "file": "AUD-2026-0418-F-18-02.jpg",
+         "name": "IMG_20261001_125253.jpg",
+         "bytes": 1074395,
+         "takenAt": "2026-10-01T12:52:53",
+         "source": "src_078.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-18-03",
+         "file": "AUD-2026-0418-F-18-03.jpg",
+         "name": "IMG_20261001_125343.jpg",
+         "bytes": 1240418,
+         "takenAt": "2026-10-01T12:53:43",
+         "source": "src_078.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-18-04",
+         "file": "AUD-2026-0418-F-18-04.jpg",
+         "name": "IMG_20261001_125404.jpg",
+         "bytes": 1249085,
+         "takenAt": "2026-10-01T12:54:04",
+         "source": "src_078.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-18-05",
+         "file": "AUD-2026-0418-F-18-05.jpg",
+         "name": "IMG_20261001_125510.jpg",
+         "bytes": 950705,
+         "takenAt": "2026-10-01T12:55:10",
+         "source": "src_078.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-18-06",
+         "file": "AUD-2026-0418-F-18-06.jpg",
+         "name": "IMG_20261001_125559.jpg",
+         "bytes": 1180200,
+         "takenAt": "2026-10-01T12:55:59",
+         "source": "src_078.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-18-07",
+         "file": "AUD-2026-0418-F-18-07.jpg",
+         "name": "IMG_20261001_125703.jpg",
+         "bytes": 1243645,
+         "takenAt": "2026-10-01T12:57:03",
+         "source": "src_078.jpg"
+        }
+       ]
+      },
+      {
+       "id": "F-19",
+       "title": "Missing fire stopping at cable penetration",
+       "severity": "major",
+       "note": "Wall penetration between MCC room and corridor not sealed.",
+       "photos": [
+        {
+         "id": "AUD-2026-0418-F-19-01",
+         "file": "AUD-2026-0418-F-19-01.jpg",
+         "name": "IMG_20261001_130353.jpg",
+         "bytes": 1028718,
+         "takenAt": "2026-10-01T13:03:53",
+         "source": "src_076.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-19-02",
+         "file": "AUD-2026-0418-F-19-02.jpg",
+         "name": "IMG_20261001_130414.jpg",
+         "bytes": 1336212,
+         "takenAt": "2026-10-01T13:04:14",
+         "source": "src_076.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-19-03",
+         "file": "AUD-2026-0418-F-19-03.jpg",
+         "name": "IMG_20261001_130528.jpg",
+         "bytes": 1427049,
+         "takenAt": "2026-10-01T13:05:28",
+         "source": "src_076.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-19-04",
+         "file": "AUD-2026-0418-F-19-04.jpg",
+         "name": "IMG_20261001_130558.jpg",
+         "bytes": 1100262,
+         "takenAt": "2026-10-01T13:05:58",
+         "source": "src_076.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-19-05",
+         "file": "AUD-2026-0418-F-19-05.jpg",
+         "name": "IMG_20261001_130609.jpg",
+         "bytes": 1290607,
+         "takenAt": "2026-10-01T13:06:09",
+         "source": "src_076.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-19-06",
+         "file": "AUD-2026-0418-F-19-06.jpg",
+         "name": "IMG_20261001_130637.jpg",
+         "bytes": 1104143,
+         "takenAt": "2026-10-01T13:06:37",
+         "source": "src_074.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-19-07",
+         "file": "AUD-2026-0418-F-19-07.jpg",
+         "name": "IMG_20261001_130712.jpg",
+         "bytes": 1103349,
+         "takenAt": "2026-10-01T13:07:12",
+         "source": "src_074.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-19-08",
+         "file": "AUD-2026-0418-F-19-08.jpg",
+         "name": "IMG_20261001_130732.jpg",
+         "bytes": 1301760,
+         "takenAt": "2026-10-01T13:07:32",
+         "source": "src_074.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-19-09",
+         "file": "AUD-2026-0418-F-19-09.jpg",
+         "name": "IMG_20261001_130756.jpg",
+         "bytes": 1282419,
+         "takenAt": "2026-10-01T13:07:56",
+         "source": "src_074.jpg"
+        }
+       ]
+      },
+      {
+       "id": "F-20",
+       "title": "No arc flash labels on switchgear SG-02",
+       "severity": "major",
+       "note": "Incident energy and PPE category labels missing on three cubicles.",
+       "photos": [
+        {
+         "id": "AUD-2026-0418-F-20-01",
+         "file": "AUD-2026-0418-F-20-01.jpg",
+         "name": "IMG_20261001_131601.jpg",
+         "bytes": 1299633,
+         "takenAt": "2026-10-01T13:16:01",
+         "source": "src_021.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-20-02",
+         "file": "AUD-2026-0418-F-20-02.jpg",
+         "name": "IMG_20261001_131703.jpg",
+         "bytes": 1385300,
+         "takenAt": "2026-10-01T13:17:03",
+         "source": "src_021.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-20-03",
+         "file": "AUD-2026-0418-F-20-03.jpg",
+         "name": "IMG_20261001_131737.jpg",
+         "bytes": 1206502,
+         "takenAt": "2026-10-01T13:17:37",
+         "source": "src_021.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-20-04",
+         "file": "AUD-2026-0418-F-20-04.jpg",
+         "name": "IMG_20261001_131814.jpg",
+         "bytes": 1465955,
+         "takenAt": "2026-10-01T13:18:14",
+         "source": "src_021.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-20-05",
+         "file": "AUD-2026-0418-F-20-05.jpg",
+         "name": "IMG_20261001_131903.jpg",
+         "bytes": 1043558,
+         "takenAt": "2026-10-01T13:19:03",
+         "source": "src_075.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-20-06",
+         "file": "AUD-2026-0418-F-20-06.jpg",
+         "name": "IMG_20261001_131912.jpg",
+         "bytes": 1418543,
+         "takenAt": "2026-10-01T13:19:12",
+         "source": "src_075.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-20-07",
+         "file": "AUD-2026-0418-F-20-07.jpg",
+         "name": "IMG_20261001_131927.jpg",
+         "bytes": 1212177,
+         "takenAt": "2026-10-01T13:19:27",
+         "source": "src_075.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-20-08",
+         "file": "AUD-2026-0418-F-20-08.jpg",
+         "name": "IMG_20261001_132041.jpg",
+         "bytes": 1243810,
+         "takenAt": "2026-10-01T13:20:41",
+         "source": "src_075.jpg"
+        }
+       ]
+      },
+      {
+       "id": "F-21",
+       "title": "Hot spot on breaker Q12 terminals",
+       "severity": "critical",
+       "note": "Thermography shows 38 degrees C above ambient on phase L2. Load to be reduced until repaired.",
+       "photos": [
+        {
+         "id": "AUD-2026-0418-F-21-01",
+         "file": "AUD-2026-0418-F-21-01.jpg",
+         "name": "IMG_20261001_132534.jpg",
+         "bytes": 1298235,
+         "takenAt": "2026-10-01T13:25:34",
+         "source": "src_019.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-21-02",
+         "file": "AUD-2026-0418-F-21-02.jpg",
+         "name": "IMG_20261001_132613.jpg",
+         "bytes": 1132315,
+         "takenAt": "2026-10-01T13:26:13",
+         "source": "src_019.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-21-03",
+         "file": "AUD-2026-0418-F-21-03.jpg",
+         "name": "IMG_20261001_132659.jpg",
+         "bytes": 1091295,
+         "takenAt": "2026-10-01T13:26:59",
+         "source": "src_019.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-21-04",
+         "file": "AUD-2026-0418-F-21-04.jpg",
+         "name": "IMG_20261001_132730.jpg",
+         "bytes": 1240707,
+         "takenAt": "2026-10-01T13:27:30",
+         "source": "src_019.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-21-05",
+         "file": "AUD-2026-0418-F-21-05.jpg",
+         "name": "IMG_20261001_132746.jpg",
+         "bytes": 1531395,
+         "takenAt": "2026-10-01T13:27:46",
+         "source": "src_019.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-21-06",
+         "file": "AUD-2026-0418-F-21-06.jpg",
+         "name": "IMG_20261001_132844.jpg",
+         "bytes": 1320581,
+         "takenAt": "2026-10-01T13:28:44",
+         "source": "src_019.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-21-07",
+         "file": "AUD-2026-0418-F-21-07.jpg",
+         "name": "IMG_20261001_132927.jpg",
+         "bytes": 1264965,
+         "takenAt": "2026-10-01T13:29:27",
+         "source": "src_025.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-21-08",
+         "file": "AUD-2026-0418-F-21-08.jpg",
+         "name": "IMG_20261001_133030.jpg",
+         "bytes": 1272401,
+         "takenAt": "2026-10-01T13:30:30",
+         "source": "src_025.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-21-09",
+         "file": "AUD-2026-0418-F-21-09.jpg",
+         "name": "IMG_20261001_133110.jpg",
+         "bytes": 1245613,
+         "takenAt": "2026-10-01T13:31:10",
+         "source": "src_025.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-21-10",
+         "file": "AUD-2026-0418-F-21-10.jpg",
+         "name": "IMG_20261001_133213.jpg",
+         "bytes": 1007826,
+         "takenAt": "2026-10-01T13:32:13",
+         "source": "src_025.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-21-11",
+         "file": "AUD-2026-0418-F-21-11.jpg",
+         "name": "IMG_20261001_133302.jpg",
+         "bytes": 1239818,
+         "takenAt": "2026-10-01T13:33:02",
+         "source": "src_025.jpg"
+        }
+       ]
+      },
+      {
+       "id": "F-22",
+       "title": "Materials stored in front of panels",
+       "severity": "minor",
+       "note": "Spare parts boxes blocking the 1 m clearance in front of MCC-2.",
+       "photos": [
+        {
+         "id": "AUD-2026-0418-F-22-01",
+         "file": "AUD-2026-0418-F-22-01.jpg",
+         "name": "IMG_20261001_134213.jpg",
+         "bytes": 1151972,
+         "takenAt": "2026-10-01T13:42:13",
+         "source": "src_024.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-22-02",
+         "file": "AUD-2026-0418-F-22-02.jpg",
+         "name": "IMG_20261001_134308.jpg",
+         "bytes": 1391072,
+         "takenAt": "2026-10-01T13:43:08",
+         "source": "src_024.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-22-03",
+         "file": "AUD-2026-0418-F-22-03.jpg",
+         "name": "IMG_20261001_134415.jpg",
+         "bytes": 1208470,
+         "takenAt": "2026-10-01T13:44:15",
+         "source": "src_024.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-22-04",
+         "file": "AUD-2026-0418-F-22-04.jpg",
+         "name": "IMG_20261001_134455.jpg",
+         "bytes": 1208032,
+         "takenAt": "2026-10-01T13:44:55",
+         "source": "src_024.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-22-05",
+         "file": "AUD-2026-0418-F-22-05.jpg",
+         "name": "IMG_20261001_134549.jpg",
+         "bytes": 1597067,
+         "takenAt": "2026-10-01T13:45:49",
+         "source": "src_024.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-22-06",
+         "file": "AUD-2026-0418-F-22-06.jpg",
+         "name": "IMG_20261001_134644.jpg",
+         "bytes": 1256932,
+         "takenAt": "2026-10-01T13:46:44",
+         "source": "src_024.jpg"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "boiler-house",
+     "name": "Boiler House",
+     "location": "Building 2",
+     "findings": [
+      {
+       "id": "F-23",
+       "title": "Steam trap failed open",
+       "severity": "minor",
+       "note": "Trap ST-118 discharging live steam to drain.",
+       "photos": [
+        {
+         "id": "AUD-2026-0418-F-23-01",
+         "file": "AUD-2026-0418-F-23-01.jpg",
+         "name": "IMG_20261001_141300.jpg",
+         "bytes": 1157787,
+         "takenAt": "2026-10-01T14:13:00",
+         "source": "src_004.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-23-02",
+         "file": "AUD-2026-0418-F-23-02.jpg",
+         "name": "IMG_20261001_141322.jpg",
+         "bytes": 1415496,
+         "takenAt": "2026-10-01T14:13:22",
+         "source": "src_004.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-23-03",
+         "file": "AUD-2026-0418-F-23-03.jpg",
+         "name": "IMG_20261001_141426.jpg",
+         "bytes": 1210652,
+         "takenAt": "2026-10-01T14:14:26",
+         "source": "src_004.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-23-04",
+         "file": "AUD-2026-0418-F-23-04.jpg",
+         "name": "IMG_20261001_141504.jpg",
+         "bytes": 1039324,
+         "takenAt": "2026-10-01T14:15:04",
+         "source": "src_004.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-23-05",
+         "file": "AUD-2026-0418-F-23-05.jpg",
+         "name": "IMG_20261001_141527.jpg",
+         "bytes": 1114272,
+         "takenAt": "2026-10-01T14:15:27",
+         "source": "src_004.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-23-06",
+         "file": "AUD-2026-0418-F-23-06.jpg",
+         "name": "IMG_20261001_141546.jpg",
+         "bytes": 1529118,
+         "takenAt": "2026-10-01T14:15:46",
+         "source": "src_004.jpg"
+        }
+       ]
+      },
+      {
+       "id": "F-24",
+       "title": "Safety valve certificate expired",
+       "severity": "major",
+       "note": "PSV-201 test certificate expired three weeks ago. No extension on file.",
+       "photos": [
+        {
+         "id": "AUD-2026-0418-F-24-01",
+         "file": "AUD-2026-0418-F-24-01.jpg",
+         "name": "IMG_20261001_142321.jpg",
+         "bytes": 1262019,
+         "takenAt": "2026-10-01T14:23:21",
+         "source": "src_054.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-24-02",
+         "file": "AUD-2026-0418-F-24-02.jpg",
+         "name": "IMG_20261001_142424.jpg",
+         "bytes": 998674,
+         "takenAt": "2026-10-01T14:24:24",
+         "source": "src_054.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-24-03",
+         "file": "AUD-2026-0418-F-24-03.jpg",
+         "name": "IMG_20261001_142508.jpg",
+         "bytes": 1124055,
+         "takenAt": "2026-10-01T14:25:08",
+         "source": "src_054.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-24-04",
+         "file": "AUD-2026-0418-F-24-04.jpg",
+         "name": "IMG_20261001_142545.jpg",
+         "bytes": 1525660,
+         "takenAt": "2026-10-01T14:25:45",
+         "source": "src_054.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-24-05",
+         "file": "AUD-2026-0418-F-24-05.jpg",
+         "name": "IMG_20261001_142621.jpg",
+         "bytes": 1474340,
+         "takenAt": "2026-10-01T14:26:21",
+         "source": "src_054.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-24-06",
+         "file": "AUD-2026-0418-F-24-06.jpg",
+         "name": "IMG_20261001_142648.jpg",
+         "bytes": 1421535,
+         "takenAt": "2026-10-01T14:26:48",
+         "source": "src_054.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-24-07",
+         "file": "AUD-2026-0418-F-24-07.jpg",
+         "name": "IMG_20261001_142657.jpg",
+         "bytes": 1317941,
+         "takenAt": "2026-10-01T14:26:57",
+         "source": "src_054.jpg"
+        }
+       ]
+      },
+      {
+       "id": "F-25",
+       "title": "Water treatment log incomplete",
+       "severity": "observation",
+       "note": "Daily conductivity readings missing for two days last week.",
+       "photos": [
+        {
+         "id": "AUD-2026-0418-F-25-01",
+         "file": "AUD-2026-0418-F-25-01.jpg",
+         "name": "IMG_20261001_143513.jpg",
+         "bytes": 1194696,
+         "takenAt": "2026-10-01T14:35:13",
+         "source": "src_011.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-25-02",
+         "file": "AUD-2026-0418-F-25-02.jpg",
+         "name": "IMG_20261001_143522.jpg",
+         "bytes": 1283112,
+         "takenAt": "2026-10-01T14:35:22",
+         "source": "src_011.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-25-03",
+         "file": "AUD-2026-0418-F-25-03.jpg",
+         "name": "IMG_20261001_143536.jpg",
+         "bytes": 1401706,
+         "takenAt": "2026-10-01T14:35:36",
+         "source": "src_011.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-25-04",
+         "file": "AUD-2026-0418-F-25-04.jpg",
+         "name": "IMG_20261001_143610.jpg",
+         "bytes": 1182590,
+         "takenAt": "2026-10-01T14:36:10",
+         "source": "src_011.jpg"
+        }
+       ]
+      },
+      {
+       "id": "F-26",
+       "title": "Missing insulation on steam header",
+       "severity": "minor",
+       "note": "Bare section of about 2 m on the main header, burn risk at shoulder height.",
+       "photos": [
+        {
+         "id": "AUD-2026-0418-F-26-01",
+         "file": "AUD-2026-0418-F-26-01.jpg",
+         "name": "IMG_20261001_144514.jpg",
+         "bytes": 1404966,
+         "takenAt": "2026-10-01T14:45:14",
+         "source": "src_003.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-26-02",
+         "file": "AUD-2026-0418-F-26-02.jpg",
+         "name": "IMG_20261001_144600.jpg",
+         "bytes": 1135370,
+         "takenAt": "2026-10-01T14:46:00",
+         "source": "src_003.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-26-03",
+         "file": "AUD-2026-0418-F-26-03.jpg",
+         "name": "IMG_20261001_144659.jpg",
+         "bytes": 1243920,
+         "takenAt": "2026-10-01T14:46:59",
+         "source": "src_003.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-26-04",
+         "file": "AUD-2026-0418-F-26-04.jpg",
+         "name": "IMG_20261001_144813.jpg",
+         "bytes": 1265287,
+         "takenAt": "2026-10-01T14:48:13",
+         "source": "src_003.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-26-05",
+         "file": "AUD-2026-0418-F-26-05.jpg",
+         "name": "IMG_20261001_144919.jpg",
+         "bytes": 965955,
+         "takenAt": "2026-10-01T14:49:19",
+         "source": "src_069.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-26-06",
+         "file": "AUD-2026-0418-F-26-06.jpg",
+         "name": "IMG_20261001_145027.jpg",
+         "bytes": 1299344,
+         "takenAt": "2026-10-01T14:50:27",
+         "source": "src_069.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-26-07",
+         "file": "AUD-2026-0418-F-26-07.jpg",
+         "name": "IMG_20261001_145042.jpg",
+         "bytes": 898482,
+         "takenAt": "2026-10-01T14:50:42",
+         "source": "src_069.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-26-08",
+         "file": "AUD-2026-0418-F-26-08.jpg",
+         "name": "IMG_20261001_145109.jpg",
+         "bytes": 1039069,
+         "takenAt": "2026-10-01T14:51:09",
+         "source": "src_069.jpg"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "production",
+     "name": "Production Hall, Line 2",
+     "location": "Building 5",
+     "findings": [
+      {
+       "id": "F-27",
+       "title": "Emergency pull-cord slack on conveyor C-204",
+       "severity": "critical",
+       "note": "Pull-cord sags about 30 cm between supports. Stop switch did not trip on test.",
+       "photos": [
+        {
+         "id": "AUD-2026-0418-F-27-01",
+         "file": "AUD-2026-0418-F-27-01.jpg",
+         "name": "IMG_20261001_151115.jpg",
+         "bytes": 1416755,
+         "takenAt": "2026-10-01T15:11:15",
+         "source": "src_049.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-27-02",
+         "file": "AUD-2026-0418-F-27-02.jpg",
+         "name": "IMG_20261001_151219.jpg",
+         "bytes": 1471801,
+         "takenAt": "2026-10-01T15:12:19",
+         "source": "src_049.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-27-03",
+         "file": "AUD-2026-0418-F-27-03.jpg",
+         "name": "IMG_20261001_151313.jpg",
+         "bytes": 1317221,
+         "takenAt": "2026-10-01T15:13:13",
+         "source": "src_049.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-27-04",
+         "file": "AUD-2026-0418-F-27-04.jpg",
+         "name": "IMG_20261001_151359.jpg",
+         "bytes": 1356624,
+         "takenAt": "2026-10-01T15:13:59",
+         "source": "src_049.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-27-05",
+         "file": "AUD-2026-0418-F-27-05.jpg",
+         "name": "IMG_20261001_151427.jpg",
+         "bytes": 1043427,
+         "takenAt": "2026-10-01T15:14:27",
+         "source": "src_049.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-27-06",
+         "file": "AUD-2026-0418-F-27-06.jpg",
+         "name": "IMG_20261001_151517.jpg",
+         "bytes": 981950,
+         "takenAt": "2026-10-01T15:15:17",
+         "source": "src_049.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-27-07",
+         "file": "AUD-2026-0418-F-27-07.jpg",
+         "name": "IMG_20261001_151626.jpg",
+         "bytes": 1302953,
+         "takenAt": "2026-10-01T15:16:26",
+         "source": "src_052.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-27-08",
+         "file": "AUD-2026-0418-F-27-08.jpg",
+         "name": "IMG_20261001_151741.jpg",
+         "bytes": 1092841,
+         "takenAt": "2026-10-01T15:17:41",
+         "source": "src_052.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-27-09",
+         "file": "AUD-2026-0418-F-27-09.jpg",
+         "name": "IMG_20261001_151856.jpg",
+         "bytes": 1222855,
+         "takenAt": "2026-10-01T15:18:56",
+         "source": "src_052.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-27-10",
+         "file": "AUD-2026-0418-F-27-10.jpg",
+         "name": "IMG_20261001_151909.jpg",
+         "bytes": 1386358,
+         "takenAt": "2026-10-01T15:19:09",
+         "source": "src_052.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-27-11",
+         "file": "AUD-2026-0418-F-27-11.jpg",
+         "name": "IMG_20261001_151936.jpg",
+         "bytes": 1104759,
+         "takenAt": "2026-10-01T15:19:36",
+         "source": "src_052.jpg"
+        }
+       ]
+      },
+      {
+       "id": "F-28",
+       "title": "Guarding gap at conveyor tail pulley",
+       "severity": "major",
+       "note": "Gap of about 15 cm between guard and frame at the tail pulley.",
+       "photos": [
+        {
+         "id": "AUD-2026-0418-F-28-01",
+         "file": "AUD-2026-0418-F-28-01.jpg",
+         "name": "IMG_20261001_152810.jpg",
+         "bytes": 1285381,
+         "takenAt": "2026-10-01T15:28:10",
+         "source": "src_086.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-28-02",
+         "file": "AUD-2026-0418-F-28-02.jpg",
+         "name": "IMG_20261001_152828.jpg",
+         "bytes": 1175505,
+         "takenAt": "2026-10-01T15:28:28",
+         "source": "src_086.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-28-03",
+         "file": "AUD-2026-0418-F-28-03.jpg",
+         "name": "IMG_20261001_152929.jpg",
+         "bytes": 1036319,
+         "takenAt": "2026-10-01T15:29:29",
+         "source": "src_086.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-28-04",
+         "file": "AUD-2026-0418-F-28-04.jpg",
+         "name": "IMG_20261001_153044.jpg",
+         "bytes": 1142828,
+         "takenAt": "2026-10-01T15:30:44",
+         "source": "src_086.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-28-05",
+         "file": "AUD-2026-0418-F-28-05.jpg",
+         "name": "IMG_20261001_153055.jpg",
+         "bytes": 1249117,
+         "takenAt": "2026-10-01T15:30:55",
+         "source": "src_086.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-28-06",
+         "file": "AUD-2026-0418-F-28-06.jpg",
+         "name": "IMG_20261001_153134.jpg",
+         "bytes": 1005757,
+         "takenAt": "2026-10-01T15:31:34",
+         "source": "src_050.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-28-07",
+         "file": "AUD-2026-0418-F-28-07.jpg",
+         "name": "IMG_20261001_153158.jpg",
+         "bytes": 1251334,
+         "takenAt": "2026-10-01T15:31:58",
+         "source": "src_050.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-28-08",
+         "file": "AUD-2026-0418-F-28-08.jpg",
+         "name": "IMG_20261001_153234.jpg",
+         "bytes": 1270253,
+         "takenAt": "2026-10-01T15:32:34",
+         "source": "src_050.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-28-09",
+         "file": "AUD-2026-0418-F-28-09.jpg",
+         "name": "IMG_20261001_153319.jpg",
+         "bytes": 1251629,
+         "takenAt": "2026-10-01T15:33:19",
+         "source": "src_050.jpg"
+        }
+       ]
+      },
+      {
+       "id": "F-29",
+       "title": "Hydraulic oil leak under press PR-2",
+       "severity": "minor",
+       "note": "Oil on the floor around the press base, absorbent applied.",
+       "photos": [
+        {
+         "id": "AUD-2026-0418-F-29-01",
+         "file": "AUD-2026-0418-F-29-01.jpg",
+         "name": "IMG_20261001_154148.jpg",
+         "bytes": 1495432,
+         "takenAt": "2026-10-01T15:41:48",
+         "source": "src_042.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-29-02",
+         "file": "AUD-2026-0418-F-29-02.jpg",
+         "name": "IMG_20261001_154206.jpg",
+         "bytes": 1490101,
+         "takenAt": "2026-10-01T15:42:06",
+         "source": "src_042.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-29-03",
+         "file": "AUD-2026-0418-F-29-03.jpg",
+         "name": "IMG_20261001_154310.jpg",
+         "bytes": 1465043,
+         "takenAt": "2026-10-01T15:43:10",
+         "source": "src_042.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-29-04",
+         "file": "AUD-2026-0418-F-29-04.jpg",
+         "name": "IMG_20261001_154401.jpg",
+         "bytes": 886961,
+         "takenAt": "2026-10-01T15:44:01",
+         "source": "src_042.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-29-05",
+         "file": "AUD-2026-0418-F-29-05.jpg",
+         "name": "IMG_20261001_154459.jpg",
+         "bytes": 1374076,
+         "takenAt": "2026-10-01T15:44:59",
+         "source": "src_042.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-29-06",
+         "file": "AUD-2026-0418-F-29-06.jpg",
+         "name": "IMG_20261001_154537.jpg",
+         "bytes": 1389905,
+         "takenAt": "2026-10-01T15:45:37",
+         "source": "src_042.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-29-07",
+         "file": "AUD-2026-0418-F-29-07.jpg",
+         "name": "IMG_20261001_154612.jpg",
+         "bytes": 1148110,
+         "takenAt": "2026-10-01T15:46:12",
+         "source": "src_042.jpg"
+        }
+       ]
+      },
+      {
+       "id": "F-30",
+       "title": "Damaged floor at walkway crossing",
+       "severity": "minor",
+       "note": "Broken concrete edge at the forklift crossing. Trip hazard.",
+       "photos": [
+        {
+         "id": "AUD-2026-0418-F-30-01",
+         "file": "AUD-2026-0418-F-30-01.jpg",
+         "name": "IMG_20261001_155032.jpg",
+         "bytes": 1197987,
+         "takenAt": "2026-10-01T15:50:32",
+         "source": "src_051.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-30-02",
+         "file": "AUD-2026-0418-F-30-02.jpg",
+         "name": "IMG_20261001_155043.jpg",
+         "bytes": 1297589,
+         "takenAt": "2026-10-01T15:50:43",
+         "source": "src_051.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-30-03",
+         "file": "AUD-2026-0418-F-30-03.jpg",
+         "name": "IMG_20261001_155140.jpg",
+         "bytes": 1158729,
+         "takenAt": "2026-10-01T15:51:40",
+         "source": "src_051.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-30-04",
+         "file": "AUD-2026-0418-F-30-04.jpg",
+         "name": "IMG_20261001_155150.jpg",
+         "bytes": 1382363,
+         "takenAt": "2026-10-01T15:51:50",
+         "source": "src_051.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-30-05",
+         "file": "AUD-2026-0418-F-30-05.jpg",
+         "name": "IMG_20261001_155212.jpg",
+         "bytes": 1001632,
+         "takenAt": "2026-10-01T15:52:12",
+         "source": "src_051.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-30-06",
+         "file": "AUD-2026-0418-F-30-06.jpg",
+         "name": "IMG_20261001_155239.jpg",
+         "bytes": 889558,
+         "takenAt": "2026-10-01T15:52:39",
+         "source": "src_051.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-30-07",
+         "file": "AUD-2026-0418-F-30-07.jpg",
+         "name": "IMG_20261001_155251.jpg",
+         "bytes": 1337278,
+         "takenAt": "2026-10-01T15:52:51",
+         "source": "src_051.jpg"
+        }
+       ]
+      },
+      {
+       "id": "F-31",
+       "title": "Loose handrail on access stairway",
+       "severity": "major",
+       "note": "Two handrail brackets loose on the mezzanine stairs.",
+       "photos": [
+        {
+         "id": "AUD-2026-0418-F-31-01",
+         "file": "AUD-2026-0418-F-31-01.jpg",
+         "name": "IMG_20261001_160045.jpg",
+         "bytes": 1004404,
+         "takenAt": "2026-10-01T16:00:45",
+         "source": "src_046.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-31-02",
+         "file": "AUD-2026-0418-F-31-02.jpg",
+         "name": "IMG_20261001_160147.jpg",
+         "bytes": 1221520,
+         "takenAt": "2026-10-01T16:01:47",
+         "source": "src_046.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-31-03",
+         "file": "AUD-2026-0418-F-31-03.jpg",
+         "name": "IMG_20261001_160159.jpg",
+         "bytes": 1161675,
+         "takenAt": "2026-10-01T16:01:59",
+         "source": "src_046.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-31-04",
+         "file": "AUD-2026-0418-F-31-04.jpg",
+         "name": "IMG_20261001_160314.jpg",
+         "bytes": 1404789,
+         "takenAt": "2026-10-01T16:03:14",
+         "source": "src_046.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-31-05",
+         "file": "AUD-2026-0418-F-31-05.jpg",
+         "name": "IMG_20261001_160350.jpg",
+         "bytes": 1348935,
+         "takenAt": "2026-10-01T16:03:50",
+         "source": "src_053.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-31-06",
+         "file": "AUD-2026-0418-F-31-06.jpg",
+         "name": "IMG_20261001_160423.jpg",
+         "bytes": 1156420,
+         "takenAt": "2026-10-01T16:04:23",
+         "source": "src_053.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-31-07",
+         "file": "AUD-2026-0418-F-31-07.jpg",
+         "name": "IMG_20261001_160517.jpg",
+         "bytes": 1048234,
+         "takenAt": "2026-10-01T16:05:17",
+         "source": "src_053.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-31-08",
+         "file": "AUD-2026-0418-F-31-08.jpg",
+         "name": "IMG_20261001_160619.jpg",
+         "bytes": 1322826,
+         "takenAt": "2026-10-01T16:06:19",
+         "source": "src_053.jpg"
+        }
+       ]
+      },
+      {
+       "id": "F-32",
+       "title": "Corrosion at column base, grid line C4",
+       "severity": "minor",
+       "note": "Paint loss and surface corrosion at the base plate of the column.",
+       "photos": [
+        {
+         "id": "AUD-2026-0418-F-32-01",
+         "file": "AUD-2026-0418-F-32-01.jpg",
+         "name": "IMG_20261001_161032.jpg",
+         "bytes": 1409207,
+         "takenAt": "2026-10-01T16:10:32",
+         "source": "src_049.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-32-02",
+         "file": "AUD-2026-0418-F-32-02.jpg",
+         "name": "IMG_20261001_161043.jpg",
+         "bytes": 1104274,
+         "takenAt": "2026-10-01T16:10:43",
+         "source": "src_049.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-32-03",
+         "file": "AUD-2026-0418-F-32-03.jpg",
+         "name": "IMG_20261001_161134.jpg",
+         "bytes": 1255897,
+         "takenAt": "2026-10-01T16:11:34",
+         "source": "src_049.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-32-04",
+         "file": "AUD-2026-0418-F-32-04.jpg",
+         "name": "IMG_20261001_161230.jpg",
+         "bytes": 1259871,
+         "takenAt": "2026-10-01T16:12:30",
+         "source": "src_049.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-32-05",
+         "file": "AUD-2026-0418-F-32-05.jpg",
+         "name": "IMG_20261001_161325.jpg",
+         "bytes": 1439430,
+         "takenAt": "2026-10-01T16:13:25",
+         "source": "src_049.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-32-06",
+         "file": "AUD-2026-0418-F-32-06.jpg",
+         "name": "IMG_20261001_161334.jpg",
+         "bytes": 1307262,
+         "takenAt": "2026-10-01T16:13:34",
+         "source": "src_052.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-32-07",
+         "file": "AUD-2026-0418-F-32-07.jpg",
+         "name": "IMG_20261001_161421.jpg",
+         "bytes": 1170940,
+         "takenAt": "2026-10-01T16:14:21",
+         "source": "src_052.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-32-08",
+         "file": "AUD-2026-0418-F-32-08.jpg",
+         "name": "IMG_20261001_161454.jpg",
+         "bytes": 1316980,
+         "takenAt": "2026-10-01T16:14:54",
+         "source": "src_052.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-32-09",
+         "file": "AUD-2026-0418-F-32-09.jpg",
+         "name": "IMG_20261001_161600.jpg",
+         "bytes": 1364271,
+         "takenAt": "2026-10-01T16:16:00",
+         "source": "src_052.jpg"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "warehouse",
+     "name": "Warehouse and Dispatch",
+     "location": "Building 9",
+     "findings": [
+      {
+       "id": "F-33",
+       "title": "Damaged racking upright, aisle 6",
+       "severity": "critical",
+       "note": "Upright bent at the first beam level after an impact. Bay not offloaded.",
+       "photos": [
+        {
+         "id": "AUD-2026-0418-F-33-01",
+         "file": "AUD-2026-0418-F-33-01.jpg",
+         "name": "IMG_20261001_163959.jpg",
+         "bytes": 1108384,
+         "takenAt": "2026-10-01T16:39:59",
+         "source": "src_096.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-33-02",
+         "file": "AUD-2026-0418-F-33-02.jpg",
+         "name": "IMG_20261001_164059.jpg",
+         "bytes": 1348497,
+         "takenAt": "2026-10-01T16:40:59",
+         "source": "src_096.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-33-03",
+         "file": "AUD-2026-0418-F-33-03.jpg",
+         "name": "IMG_20261001_164122.jpg",
+         "bytes": 1169299,
+         "takenAt": "2026-10-01T16:41:22",
+         "source": "src_096.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-33-04",
+         "file": "AUD-2026-0418-F-33-04.jpg",
+         "name": "IMG_20261001_164222.jpg",
+         "bytes": 1404566,
+         "takenAt": "2026-10-01T16:42:22",
+         "source": "src_096.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-33-05",
+         "file": "AUD-2026-0418-F-33-05.jpg",
+         "name": "IMG_20261001_164302.jpg",
+         "bytes": 1341882,
+         "takenAt": "2026-10-01T16:43:02",
+         "source": "src_096.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-33-06",
+         "file": "AUD-2026-0418-F-33-06.jpg",
+         "name": "IMG_20261001_164348.jpg",
+         "bytes": 1483598,
+         "takenAt": "2026-10-01T16:43:48",
+         "source": "src_096.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-33-07",
+         "file": "AUD-2026-0418-F-33-07.jpg",
+         "name": "IMG_20261001_164502.jpg",
+         "bytes": 1043513,
+         "takenAt": "2026-10-01T16:45:02",
+         "source": "src_059.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-33-08",
+         "file": "AUD-2026-0418-F-33-08.jpg",
+         "name": "IMG_20261001_164529.jpg",
+         "bytes": 1279726,
+         "takenAt": "2026-10-01T16:45:29",
+         "source": "src_059.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-33-09",
+         "file": "AUD-2026-0418-F-33-09.jpg",
+         "name": "IMG_20261001_164622.jpg",
+         "bytes": 1241745,
+         "takenAt": "2026-10-01T16:46:22",
+         "source": "src_059.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-33-10",
+         "file": "AUD-2026-0418-F-33-10.jpg",
+         "name": "IMG_20261001_164700.jpg",
+         "bytes": 1055687,
+         "takenAt": "2026-10-01T16:47:00",
+         "source": "src_059.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-33-11",
+         "file": "AUD-2026-0418-F-33-11.jpg",
+         "name": "IMG_20261001_164743.jpg",
+         "bytes": 1224942,
+         "takenAt": "2026-10-01T16:47:43",
+         "source": "src_059.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-33-12",
+         "file": "AUD-2026-0418-F-33-12.jpg",
+         "name": "IMG_20261001_164840.jpg",
+         "bytes": 1274045,
+         "takenAt": "2026-10-01T16:48:40",
+         "source": "src_059.jpg"
+        }
+       ]
+      },
+      {
+       "id": "F-34",
+       "title": "Rack load signs missing",
+       "severity": "minor",
+       "note": "Safe working load signs missing at the ends of aisles 3 and 4.",
+       "photos": [
+        {
+         "id": "AUD-2026-0418-F-34-01",
+         "file": "AUD-2026-0418-F-34-01.jpg",
+         "name": "IMG_20261001_165747.jpg",
+         "bytes": 1177756,
+         "takenAt": "2026-10-01T16:57:47",
+         "source": "src_092.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-34-02",
+         "file": "AUD-2026-0418-F-34-02.jpg",
+         "name": "IMG_20261001_165829.jpg",
+         "bytes": 1025208,
+         "takenAt": "2026-10-01T16:58:29",
+         "source": "src_092.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-34-03",
+         "file": "AUD-2026-0418-F-34-03.jpg",
+         "name": "IMG_20261001_165842.jpg",
+         "bytes": 1193726,
+         "takenAt": "2026-10-01T16:58:42",
+         "source": "src_092.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-34-04",
+         "file": "AUD-2026-0418-F-34-04.jpg",
+         "name": "IMG_20261001_165943.jpg",
+         "bytes": 1288777,
+         "takenAt": "2026-10-01T16:59:43",
+         "source": "src_092.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-34-05",
+         "file": "AUD-2026-0418-F-34-05.jpg",
+         "name": "IMG_20261001_170047.jpg",
+         "bytes": 1233788,
+         "takenAt": "2026-10-01T17:00:47",
+         "source": "src_092.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-34-06",
+         "file": "AUD-2026-0418-F-34-06.jpg",
+         "name": "IMG_20261001_170125.jpg",
+         "bytes": 1381950,
+         "takenAt": "2026-10-01T17:01:25",
+         "source": "src_092.jpg"
+        }
+       ]
+      },
+      {
+       "id": "F-35",
+       "title": "No eyewash at forklift charging area",
+       "severity": "major",
+       "note": "Battery charging area has no eyewash station within 10 m.",
+       "photos": [
+        {
+         "id": "AUD-2026-0418-F-35-01",
+         "file": "AUD-2026-0418-F-35-01.jpg",
+         "name": "IMG_20261001_170918.jpg",
+         "bytes": 1006613,
+         "takenAt": "2026-10-01T17:09:18",
+         "source": "src_062.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-35-02",
+         "file": "AUD-2026-0418-F-35-02.jpg",
+         "name": "IMG_20261001_171009.jpg",
+         "bytes": 1210156,
+         "takenAt": "2026-10-01T17:10:09",
+         "source": "src_062.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-35-03",
+         "file": "AUD-2026-0418-F-35-03.jpg",
+         "name": "IMG_20261001_171117.jpg",
+         "bytes": 1681168,
+         "takenAt": "2026-10-01T17:11:17",
+         "source": "src_062.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-35-04",
+         "file": "AUD-2026-0418-F-35-04.jpg",
+         "name": "IMG_20261001_171144.jpg",
+         "bytes": 1195071,
+         "takenAt": "2026-10-01T17:11:44",
+         "source": "src_062.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-35-05",
+         "file": "AUD-2026-0418-F-35-05.jpg",
+         "name": "IMG_20261001_171251.jpg",
+         "bytes": 988519,
+         "takenAt": "2026-10-01T17:12:51",
+         "source": "src_062.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-35-06",
+         "file": "AUD-2026-0418-F-35-06.jpg",
+         "name": "IMG_20261001_171334.jpg",
+         "bytes": 1120088,
+         "takenAt": "2026-10-01T17:13:34",
+         "source": "src_062.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-35-07",
+         "file": "AUD-2026-0418-F-35-07.jpg",
+         "name": "IMG_20261001_171425.jpg",
+         "bytes": 1335670,
+         "takenAt": "2026-10-01T17:14:25",
+         "source": "src_062.jpg"
+        }
+       ]
+      },
+      {
+       "id": "F-36",
+       "title": "Worn pedestrian walkway markings",
+       "severity": "minor",
+       "note": "Yellow walkway lines worn through at the dispatch doors.",
+       "photos": [
+        {
+         "id": "AUD-2026-0418-F-36-01",
+         "file": "AUD-2026-0418-F-36-01.jpg",
+         "name": "IMG_20261001_171635.jpg",
+         "bytes": 931128,
+         "takenAt": "2026-10-01T17:16:35",
+         "source": "src_063.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-36-02",
+         "file": "AUD-2026-0418-F-36-02.jpg",
+         "name": "IMG_20261001_171726.jpg",
+         "bytes": 1237690,
+         "takenAt": "2026-10-01T17:17:26",
+         "source": "src_063.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-36-03",
+         "file": "AUD-2026-0418-F-36-03.jpg",
+         "name": "IMG_20261001_171739.jpg",
+         "bytes": 1254154,
+         "takenAt": "2026-10-01T17:17:39",
+         "source": "src_063.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-36-04",
+         "file": "AUD-2026-0418-F-36-04.jpg",
+         "name": "IMG_20261001_171755.jpg",
+         "bytes": 1403110,
+         "takenAt": "2026-10-01T17:17:55",
+         "source": "src_063.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-36-05",
+         "file": "AUD-2026-0418-F-36-05.jpg",
+         "name": "IMG_20261001_171844.jpg",
+         "bytes": 1444518,
+         "takenAt": "2026-10-01T17:18:44",
+         "source": "src_064.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-36-06",
+         "file": "AUD-2026-0418-F-36-06.jpg",
+         "name": "IMG_20261001_171936.jpg",
+         "bytes": 1328083,
+         "takenAt": "2026-10-01T17:19:36",
+         "source": "src_064.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-36-07",
+         "file": "AUD-2026-0418-F-36-07.jpg",
+         "name": "IMG_20261001_172000.jpg",
+         "bytes": 1117809,
+         "takenAt": "2026-10-01T17:20:00",
+         "source": "src_064.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-36-08",
+         "file": "AUD-2026-0418-F-36-08.jpg",
+         "name": "IMG_20261001_172109.jpg",
+         "bytes": 1451224,
+         "takenAt": "2026-10-01T17:21:09",
+         "source": "src_064.jpg"
+        }
+       ]
+      },
+      {
+       "id": "F-37",
+       "title": "Pallets stored in fire exit route",
+       "severity": "major",
+       "note": "Two pallets blocking the exit route to door D-4.",
+       "photos": [
+        {
+         "id": "AUD-2026-0418-F-37-01",
+         "file": "AUD-2026-0418-F-37-01.jpg",
+         "name": "IMG_20261001_173031.jpg",
+         "bytes": 1063178,
+         "takenAt": "2026-10-01T17:30:31",
+         "source": "src_095.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-37-02",
+         "file": "AUD-2026-0418-F-37-02.jpg",
+         "name": "IMG_20261001_173045.jpg",
+         "bytes": 1357093,
+         "takenAt": "2026-10-01T17:30:45",
+         "source": "src_095.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-37-03",
+         "file": "AUD-2026-0418-F-37-03.jpg",
+         "name": "IMG_20261001_173129.jpg",
+         "bytes": 1294398,
+         "takenAt": "2026-10-01T17:31:29",
+         "source": "src_095.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-37-04",
+         "file": "AUD-2026-0418-F-37-04.jpg",
+         "name": "IMG_20261001_173153.jpg",
+         "bytes": 1465574,
+         "takenAt": "2026-10-01T17:31:53",
+         "source": "src_095.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-37-05",
+         "file": "AUD-2026-0418-F-37-05.jpg",
+         "name": "IMG_20261001_173236.jpg",
+         "bytes": 1230660,
+         "takenAt": "2026-10-01T17:32:36",
+         "source": "src_095.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-37-06",
+         "file": "AUD-2026-0418-F-37-06.jpg",
+         "name": "IMG_20261001_173327.jpg",
+         "bytes": 1375465,
+         "takenAt": "2026-10-01T17:33:27",
+         "source": "src_095.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-37-07",
+         "file": "AUD-2026-0418-F-37-07.jpg",
+         "name": "IMG_20261001_173403.jpg",
+         "bytes": 820635,
+         "takenAt": "2026-10-01T17:34:03",
+         "source": "src_095.jpg"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "emergency",
+     "name": "Emergency Equipment",
+     "location": "Site wide",
+     "findings": [
+      {
+       "id": "F-38",
+       "title": "Extinguisher inspection overdue",
+       "severity": "minor",
+       "note": "Extinguisher FE-117 last inspected 14 months ago.",
+       "photos": [
+        {
+         "id": "AUD-2026-0418-F-38-01",
+         "file": "AUD-2026-0418-F-38-01.jpg",
+         "name": "IMG_20261001_174616.jpg",
+         "bytes": 941992,
+         "takenAt": "2026-10-01T17:46:16",
+         "source": "src_028.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-38-02",
+         "file": "AUD-2026-0418-F-38-02.jpg",
+         "name": "IMG_20261001_174653.jpg",
+         "bytes": 1041967,
+         "takenAt": "2026-10-01T17:46:53",
+         "source": "src_028.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-38-03",
+         "file": "AUD-2026-0418-F-38-03.jpg",
+         "name": "IMG_20261001_174717.jpg",
+         "bytes": 988344,
+         "takenAt": "2026-10-01T17:47:17",
+         "source": "src_028.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-38-04",
+         "file": "AUD-2026-0418-F-38-04.jpg",
+         "name": "IMG_20261001_174811.jpg",
+         "bytes": 1129347,
+         "takenAt": "2026-10-01T17:48:11",
+         "source": "src_028.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-38-05",
+         "file": "AUD-2026-0418-F-38-05.jpg",
+         "name": "IMG_20261001_174840.jpg",
+         "bytes": 1178782,
+         "takenAt": "2026-10-01T17:48:40",
+         "source": "src_028.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-38-06",
+         "file": "AUD-2026-0418-F-38-06.jpg",
+         "name": "IMG_20261001_174955.jpg",
+         "bytes": 1210132,
+         "takenAt": "2026-10-01T17:49:55",
+         "source": "src_028.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-38-07",
+         "file": "AUD-2026-0418-F-38-07.jpg",
+         "name": "IMG_20261001_175043.jpg",
+         "bytes": 1093103,
+         "takenAt": "2026-10-01T17:50:43",
+         "source": "src_028.jpg"
+        }
+       ]
+      },
+      {
+       "id": "F-39",
+       "title": "Safety shower flow test not recorded",
+       "severity": "major",
+       "note": "No weekly flow test records for the shower at the acid unloading point.",
+       "photos": [
+        {
+         "id": "AUD-2026-0418-F-39-01",
+         "file": "AUD-2026-0418-F-39-01.jpg",
+         "name": "IMG_20261001_175741.jpg",
+         "bytes": 1636049,
+         "takenAt": "2026-10-01T17:57:41",
+         "source": "src_033.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-39-02",
+         "file": "AUD-2026-0418-F-39-02.jpg",
+         "name": "IMG_20261001_175855.jpg",
+         "bytes": 1158023,
+         "takenAt": "2026-10-01T17:58:55",
+         "source": "src_033.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-39-03",
+         "file": "AUD-2026-0418-F-39-03.jpg",
+         "name": "IMG_20261001_175941.jpg",
+         "bytes": 1222624,
+         "takenAt": "2026-10-01T17:59:41",
+         "source": "src_033.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-39-04",
+         "file": "AUD-2026-0418-F-39-04.jpg",
+         "name": "IMG_20261001_180043.jpg",
+         "bytes": 1517125,
+         "takenAt": "2026-10-01T18:00:43",
+         "source": "src_033.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-39-05",
+         "file": "AUD-2026-0418-F-39-05.jpg",
+         "name": "IMG_20261001_180112.jpg",
+         "bytes": 1226504,
+         "takenAt": "2026-10-01T18:01:12",
+         "source": "src_033.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-39-06",
+         "file": "AUD-2026-0418-F-39-06.jpg",
+         "name": "IMG_20261001_180210.jpg",
+         "bytes": 1117251,
+         "takenAt": "2026-10-01T18:02:10",
+         "source": "src_032.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-39-07",
+         "file": "AUD-2026-0418-F-39-07.jpg",
+         "name": "IMG_20261001_180238.jpg",
+         "bytes": 1148591,
+         "takenAt": "2026-10-01T18:02:38",
+         "source": "src_032.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-39-08",
+         "file": "AUD-2026-0418-F-39-08.jpg",
+         "name": "IMG_20261001_180247.jpg",
+         "bytes": 1175244,
+         "takenAt": "2026-10-01T18:02:47",
+         "source": "src_032.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-39-09",
+         "file": "AUD-2026-0418-F-39-09.jpg",
+         "name": "IMG_20261001_180348.jpg",
+         "bytes": 1395215,
+         "takenAt": "2026-10-01T18:03:48",
+         "source": "src_032.jpg"
+        }
+       ]
+      },
+      {
+       "id": "F-40",
+       "title": "Exit sign not illuminated",
+       "severity": "minor",
+       "note": "Exit sign above door D-2 not lit. Emergency lighting test due.",
+       "photos": [
+        {
+         "id": "AUD-2026-0418-F-40-01",
+         "file": "AUD-2026-0418-F-40-01.jpg",
+         "name": "IMG_20261001_181345.jpg",
+         "bytes": 1028029,
+         "takenAt": "2026-10-01T18:13:45",
+         "source": "src_034.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-40-02",
+         "file": "AUD-2026-0418-F-40-02.jpg",
+         "name": "IMG_20261001_181446.jpg",
+         "bytes": 986353,
+         "takenAt": "2026-10-01T18:14:46",
+         "source": "src_034.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-40-03",
+         "file": "AUD-2026-0418-F-40-03.jpg",
+         "name": "IMG_20261001_181536.jpg",
+         "bytes": 1034351,
+         "takenAt": "2026-10-01T18:15:36",
+         "source": "src_034.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-40-04",
+         "file": "AUD-2026-0418-F-40-04.jpg",
+         "name": "IMG_20261001_181626.jpg",
+         "bytes": 1134503,
+         "takenAt": "2026-10-01T18:16:26",
+         "source": "src_034.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-40-05",
+         "file": "AUD-2026-0418-F-40-05.jpg",
+         "name": "IMG_20261001_181643.jpg",
+         "bytes": 1357840,
+         "takenAt": "2026-10-01T18:16:43",
+         "source": "src_034.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-40-06",
+         "file": "AUD-2026-0418-F-40-06.jpg",
+         "name": "IMG_20261001_181733.jpg",
+         "bytes": 1121471,
+         "takenAt": "2026-10-01T18:17:33",
+         "source": "src_034.jpg"
+        }
+       ]
+      },
+      {
+       "id": "F-41",
+       "title": "Fire hose reel obstructed",
+       "severity": "major",
+       "note": "Hose reel HR-05 blocked by stored drums.",
+       "photos": [
+        {
+         "id": "AUD-2026-0418-F-41-01",
+         "file": "AUD-2026-0418-F-41-01.jpg",
+         "name": "IMG_20261001_182458.jpg",
+         "bytes": 1261793,
+         "takenAt": "2026-10-01T18:24:58",
+         "source": "src_035.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-41-02",
+         "file": "AUD-2026-0418-F-41-02.jpg",
+         "name": "IMG_20261001_182540.jpg",
+         "bytes": 1154368,
+         "takenAt": "2026-10-01T18:25:40",
+         "source": "src_035.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-41-03",
+         "file": "AUD-2026-0418-F-41-03.jpg",
+         "name": "IMG_20261001_182649.jpg",
+         "bytes": 1429115,
+         "takenAt": "2026-10-01T18:26:49",
+         "source": "src_035.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-41-04",
+         "file": "AUD-2026-0418-F-41-04.jpg",
+         "name": "IMG_20261001_182658.jpg",
+         "bytes": 1543471,
+         "takenAt": "2026-10-01T18:26:58",
+         "source": "src_035.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-41-05",
+         "file": "AUD-2026-0418-F-41-05.jpg",
+         "name": "IMG_20261001_182732.jpg",
+         "bytes": 1268239,
+         "takenAt": "2026-10-01T18:27:32",
+         "source": "src_027.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-41-06",
+         "file": "AUD-2026-0418-F-41-06.jpg",
+         "name": "IMG_20261001_182814.jpg",
+         "bytes": 1272847,
+         "takenAt": "2026-10-01T18:28:14",
+         "source": "src_027.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-41-07",
+         "file": "AUD-2026-0418-F-41-07.jpg",
+         "name": "IMG_20261001_182842.jpg",
+         "bytes": 1608130,
+         "takenAt": "2026-10-01T18:28:42",
+         "source": "src_027.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-41-08",
+         "file": "AUD-2026-0418-F-41-08.jpg",
+         "name": "IMG_20261001_182853.jpg",
+         "bytes": 1589090,
+         "takenAt": "2026-10-01T18:28:53",
+         "source": "src_027.jpg"
+        }
+       ]
+      },
+      {
+       "id": "F-42",
+       "title": "Emergency station complete and in good order",
+       "severity": "observation",
+       "note": "Station at the tank farm entrance checked, all items present and tagged.",
+       "photos": [
+        {
+         "id": "AUD-2026-0418-F-42-01",
+         "file": "AUD-2026-0418-F-42-01.jpg",
+         "name": "IMG_20261001_183609.jpg",
+         "bytes": 1184733,
+         "takenAt": "2026-10-01T18:36:09",
+         "source": "src_028.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-42-02",
+         "file": "AUD-2026-0418-F-42-02.jpg",
+         "name": "IMG_20261001_183630.jpg",
+         "bytes": 1114162,
+         "takenAt": "2026-10-01T18:36:30",
+         "source": "src_028.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-42-03",
+         "file": "AUD-2026-0418-F-42-03.jpg",
+         "name": "IMG_20261001_183640.jpg",
+         "bytes": 1347856,
+         "takenAt": "2026-10-01T18:36:40",
+         "source": "src_028.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-42-04",
+         "file": "AUD-2026-0418-F-42-04.jpg",
+         "name": "IMG_20261001_183651.jpg",
+         "bytes": 1405226,
+         "takenAt": "2026-10-01T18:36:51",
+         "source": "src_028.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-42-05",
+         "file": "AUD-2026-0418-F-42-05.jpg",
+         "name": "IMG_20261001_183712.jpg",
+         "bytes": 1315700,
+         "takenAt": "2026-10-01T18:37:12",
+         "source": "src_028.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-42-06",
+         "file": "AUD-2026-0418-F-42-06.jpg",
+         "name": "IMG_20261001_183722.jpg",
+         "bytes": 1428811,
+         "takenAt": "2026-10-01T18:37:22",
+         "source": "src_033.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-42-07",
+         "file": "AUD-2026-0418-F-42-07.jpg",
+         "name": "IMG_20261001_183805.jpg",
+         "bytes": 1175758,
+         "takenAt": "2026-10-01T18:38:05",
+         "source": "src_033.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-42-08",
+         "file": "AUD-2026-0418-F-42-08.jpg",
+         "name": "IMG_20261001_183846.jpg",
+         "bytes": 1457722,
+         "takenAt": "2026-10-01T18:38:46",
+         "source": "src_033.jpg"
+        },
+        {
+         "id": "AUD-2026-0418-F-42-09",
+         "file": "AUD-2026-0418-F-42-09.jpg",
+         "name": "IMG_20261001_183900.jpg",
+         "bytes": 1169726,
+         "takenAt": "2026-10-01T18:39:00",
+         "source": "src_033.jpg"
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "AUD-2026-0397",
+   "title": "Contractor Safety Walkdown",
+   "site": "Northgate Process Plant",
+   "unit": "Unit 3",
+   "auditor": "Marta Lopes",
+   "date": "2026-09-17",
+   "status": "Synced",
+   "findingCount": 14,
+   "photoCount": 61,
+   "totalBytes": 74100000
+  },
+  {
+   "id": "AUD-2026-0362",
+   "title": "Quarterly Fire Equipment Check",
+   "site": "Riverside Logistics Hub",
+   "unit": "Warehouse A",
+   "auditor": "Marta Lopes",
+   "date": "2026-09-02",
+   "status": "Synced",
+   "findingCount": 9,
+   "photoCount": 27,
+   "totalBytes": 31800000
+  }
+ ]
+}
