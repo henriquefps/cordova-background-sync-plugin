@@ -2,7 +2,7 @@
 
 A professional, high-resilience **Background Data & Asset Synchronization Engine** designed for hybrid mobile applications (Cordova, Capacitor) using local SQLite/LocalStorage databases.
 
-This plugin delegates the synchronization of offline relational records and heavy binary assets (images, PDFs, videos) to the **native operating system layer (Kotlin on Android / Objective-C on iOS)**. It operates entirely in the background, bypassing the WebView (JavaScript runtime) suspension limits, ensuring that your data sync is unbreakable even when the app is closed, minimized, or the device is locked.
+This plugin delegates the synchronization of offline relational records and heavy binary assets (images, PDFs, videos) to the **native operating system layer (Kotlin on Android / Objective-C on iOS)**. It runs outside the WebView (JavaScript runtime), so WebView suspension does not stop it. On Android it keeps going when the app is closed, minimized, or the device is locked. On iOS it runs while the app is in the foreground and for the short background window iOS grants (about 30 seconds), then pauses and resumes when the app returns or calls `sync()`, with nothing lost (see [Technical Limitations](docs/limitations.md#3-ios-background-life-cycle)). The plugin declares no iOS background modes.
 
 ---
 
@@ -44,7 +44,7 @@ All methods are exposed under `cordova.plugins.BackgroundSyncPlugin` (also `wind
 | `initialize(options, success, error)` | Configures the engine (`serverUrl`, `headers`, `syncOnlyOnWifi`, `syncOnlyWhenCharging`, `enableNotifications`, `autoDeleteCompleted`, `encryptDatabase`, `notificationTexts`, `showDebugLogs`). Must be called before any other method. |
 | `sync(success, error)` / `enqueueSync(success, error)` | Schedules a single native background run that drains `sync_queue` (uploads) and then `download_queue` (downloads). Both names trigger the same action. |
 | `cancelSync(success, error)` | Cancels the currently scheduled/running sync task. Records already completed remain completed; pending/failed records are left untouched. |
-| `requestNotificationsPermission(success, error)` | Requests the runtime `POST_NOTIFICATIONS` permission (Android 13+ only; resolves immediately on other versions/iOS). |
+| `requestNotificationsPermission(success, error)` | Requests the runtime `POST_NOTIFICATIONS` permission (Android 13+; resolves immediately on older versions). On iOS it shows the system notification prompt the first time and resolves with `true` or `false`. |
 | `registerListeners(listeners)` | Registers an object with 7 real-time sync callbacks: `onStarted`/`onProgress`/`onFailed` (upload), `onStarted_download`/`onProgress_download`/`onFailed_download` (download), and a single shared `onCompleted` that fires once after both queues finish — **there is no `onCompleted_download`**. Full payload reference: [Integration Guide → Register Progress Listeners](docs/integration-guide.md#step-2-register-progress-listeners). |
 | `onProgress(callback)` | Legacy shorthand that registers only a progress callback (internally calls `registerListeners`). |
 | `executeRawQuery(query, args, success, error)` | Runs a raw SQL statement against the plugin's private `bg_sync.db` (`SELECT`/`PRAGMA` return rows; other statements execute directly). |
@@ -55,7 +55,7 @@ All methods are exposed under `cordova.plugins.BackgroundSyncPlugin` (also `wind
 | `clearQueue(success, error)` | Deletes all rows from `sync_queue`. |
 | `enqueueDownload(record, success, error)` | Adds a record (`id?`, `payload?`, `endpoint`, `filePath?`, `downloadStrategy?`) to `download_queue`. |
 | `getQueuedDownloads(success, error)` | Returns pending/failed download records: `[{ id, status, error }]`. |
-| `getCompletedDownloads([options], success, error)` | Returns `{ records: [...], hasMore }` for completed downloads. Optional `{ limit, offset }` enables pagination. If `autoDeleteCompleted` is `true`, returned records are deleted from the queue (**downloads only** — `getSyncedRecords` below is never affected by this flag) and any `offset` you pass is ignored server-side; see [Background Downloads Guide → Fetch Completed Downloads](docs/background-downloads.md#3-fetch-completed-downloads-access-json-results) for the correct pagination loop in each case. |
+| `getCompletedDownloads([options], success, error)` | Returns `{ records: [...], hasMore }` for completed downloads. Optional `{ limit, offset }` enables pagination. If `autoDeleteCompleted` is `true`, returned records are deleted from the queue and any `offset` you pass is ignored server-side (the same flag deletes each upload as soon as it is sent, so `getSyncedRecords` then returns nothing); see [Background Downloads Guide → Fetch Completed Downloads](docs/background-downloads.md#3-fetch-completed-downloads-access-json-results) for the correct pagination loop in each case. |
 | `removeDownloads(ids, success, error)` | Deletes specific download records by `id`. |
 | `clearDownloadQueue(success, error)` | Deletes all rows from `download_queue`. |
 | `openDatabaseInspector(success, error)` | Opens a native full-screen recovery/inspection UI (WKWebView on iOS, WebView on Android) over the plugin's private database — browse both queues, delete stuck records, and export everything as JSON. Intended for manual recovery/debugging, not end-user-facing production flows. |
@@ -66,13 +66,14 @@ For enqueue/download payload shapes, event details, and server-side contracts, s
 
 ## Example app
 
-[`examples/field-audit-demo/`](examples/field-audit-demo/) is a complete, runnable demo (Android only): a Capacitor audit app that queues 336 photos (418 MB) with `enqueueRecord` and `enqueueSync`, plus a zero-dependency Node backoffice that implements the [REST contract](docs/rest-api-signature.md) and fills a live photo grid as uploads arrive. It shows the sync continuing with the app in the background and the screen locked, and the queue resuming on its own after airplane mode. The app uses this repository's plugin directly (`file:../../..`).
+[`examples/field-audit-demo/`](examples/field-audit-demo/) is a complete, runnable demo for Android and the iOS simulator: a Capacitor audit app that queues 336 photos (418 MB) with `enqueueRecord` and `enqueueSync`, plus a zero-dependency Node backoffice that implements the [REST contract](docs/rest-api-signature.md) and fills a live photo grid as uploads arrive. It shows the sync continuing with the app in the background and the screen locked, and the queue resuming on its own after airplane mode. The app uses this repository's plugin directly (`file:../../..`).
 
 ```sh
 cd examples/field-audit-demo
 python3 seed/fetch_sources.py --target 100 && python3 seed/generate_audit.py
 node backoffice/server.mjs &
-scripts/build.sh && scripts/seed-device.sh
+scripts/build.sh && scripts/seed-device.sh         # Android emulator
+scripts/ios-build.sh && scripts/ios-seed.sh         # iOS simulator
 ```
 
 Requirements, the full walkthrough and what was verified are in its [README](examples/field-audit-demo/README.md).

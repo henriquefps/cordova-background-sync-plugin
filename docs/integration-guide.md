@@ -50,7 +50,7 @@ if (syncEngine) {
             syncOnlyOnWifi: false,                     // Android: require Wi-Fi
             syncOnlyWhenCharging: false,               // Android: require charger
             enableNotifications: true,                 // Show native progress notifications
-            autoDeleteCompleted: true,                // Auto-deletes completed DOWNLOADS only — see note below
+            autoDeleteCompleted: true,                // Deletes uploads when sent, downloads when read; see note below
             encryptDatabase: true,                     // Enable SQLCipher encryption (Keystore/Keychain)
             headers: {
                 "Authorization": "Bearer eyJhbGciOi...",
@@ -78,7 +78,9 @@ if (syncEngine) {
 ```
 
 > [!NOTE]
-> **`autoDeleteCompleted` only affects `download_queue`.** When `true`, `getCompletedDownloads()` deletes each record it returns (see [Background Downloads Guide](background-downloads.md)). It has **no effect on `sync_queue`** — completed uploads always persist until you explicitly call `removeRecords()`, regardless of this setting. See [Manually Cancelling Synchronization → Managing Completed Uploads](cancel-sync.md#step-1-managing-completed-uploads) for the cleanup pattern this implies.
+> **`autoDeleteCompleted` affects both queues, at different moments** (same behaviour on Android and iOS).
+> * **Uploads (`sync_queue`):** when `true`, a record is deleted as soon as its upload succeeds, so `getSyncedRecords()` returns an empty list and there is nothing to clean up. When `false`, completed uploads stay in the queue with status `completed` until you call `removeRecords()` or `clearQueue()` (see [Managing Completed Uploads](cancel-sync.md#step-1-managing-completed-uploads)).
+> * **Downloads (`download_queue`):** when `true`, completed downloads stay in the queue until you read them, and `getCompletedDownloads()` deletes each record it returns (see [Background Downloads Guide](background-downloads.md)). When `false`, they stay until `removeDownloads()` or `clearDownloadQueue()`.
 
 ---
 
@@ -88,13 +90,20 @@ Register event listeners to track the real-time background progress when the app
 
 | Event | Fires when | Payload |
 | :--- | :--- | :--- |
-| `onStarted` | The upload queue starts processing | `{ event, totalCount }` |
-| `onProgress` | Periodically during upload | `{ event, percentage, completedCount, totalCount }` |
-| `onFailed` | Upload sync suspended (network drop or `cancelSync()`) | `{ event, percentage, completedCount, totalCount, error }` |
-| `onStarted_download` | The download queue starts processing | `{ event, totalCount }` |
-| `onProgress_download` | Periodically during download | `{ event, percentage, completedCount, totalCount }` |
-| `onFailed_download` | Download sync suspended | `{ event, percentage, completedCount, totalCount, error }` |
+| `onStarted` | Once, when the upload queue starts processing | `{ event, totalCount }` |
+| `onProgress` | After each record is uploaded successfully | `{ event, percentage, completedCount, totalCount }` |
+| `onFailed` | For each record that fails, when a run stops on a network drop, and once on `cancelSync()` (error `"Synchronization cancelled by user"`) | `{ event, percentage, completedCount, totalCount, error }` |
+| `onStarted_download` | Once, when the download queue starts processing | `{ event, totalCount }` |
+| `onProgress_download` | Before each download starts | `{ event, percentage, completedCount, totalCount }` |
+| `onFailed_download` | For each download that fails | `{ event, percentage, completedCount, totalCount, error }` |
 | `onCompleted` | **Once**, after the entire run finishes (uploads *and* downloads) | `{ event, percentage, completedCount, totalCount }` |
+
+What the counts mean (the same on Android and iOS since 1.0.5):
+* **Uploads:** `completedCount` is the number of records sent so far in this run. `onProgress` fires after each successful upload, so it goes 1, 2, ... N; `onFailed` carries the number sent before the failure. A record removed from the queue during the run is left out of `totalCount`.
+* **Downloads:** `onProgress_download` fires before each download, with the position of the item being downloaded (1..N). `onFailed_download` carries the number downloaded so far.
+* **`onCompleted`:** `completedCount` is the number of items that succeeded (uploads plus downloads); `totalCount` is all items of the run, so `totalCount - completedCount` items failed and stay queued.
+
+Up to 1.0.4, Android fired `onProgress` before each upload with the position of the record being sent, and counted failed items in `onCompleted`.
 
 > [!IMPORTANT]
 > There is **no `onCompleted_download`**. Unlike the other three, `onCompleted` is not split per direction — it fires exactly once per `sync()` run, after both queues have been drained, with `completedCount`/`totalCount` covering uploads and downloads combined. Don't wait for a separate "downloads finished" signal; it doesn't exist.
@@ -222,7 +231,13 @@ syncEngine.clearQueue(
 
 ### 1. OutSystems Mobile Setup
 
-Since the plugin's [plugin.xml](file:///../plugin.xml) automatically injects the required iOS background modes (`fetch` and `processing`) and Android permissions into the generated native packages, **no manual configuration of background capabilities is required** inside OutSystems.
+The plugin's [plugin.xml](file:///../plugin.xml) adds the Android permissions it needs to the generated native packages, so **no manual configuration of background capabilities is required** inside OutSystems. On iOS no background mode is needed: the sync runs in a `UIApplication` background task, which iOS grants without any `UIBackgroundModes` entry. It runs while the app is in the foreground, continues for about 30 seconds after the app leaves it, then pauses and resumes when the app returns or calls `sync()` (see [Technical Limitations](limitations.md#3-ios-background-life-cycle)).
+
+> [!NOTE]
+> **No more iOS background modes:** versions up to 1.0.4 added `fetch` and `processing` to `UIBackgroundModes`, unused by the plugin. If your app relied on that for its own code, declare those modes in your app.
+
+> [!NOTE]
+> **Capacitor (iOS):** Capacitor does not apply the plugin's `Info.plist` entries (here, `NSLocalNetworkUsageDescription`). Add `NSLocalNetworkUsageDescription` yourself only if your server is on the local network, and an App Transport Security exception if it is plain `http`.
 
 You only need to reference the plugin's Git repository in your OutSystems module's **Extensibility Configurations**:
 
