@@ -17,15 +17,15 @@ To achieve this while respecting battery consumption and OS limitations, the plu
 ### 1. Android (Native `WorkManager` Scheduling)
 On Android, the plugin leverages the Jetpack `WorkManager` API. When a sync worker executes in the background and encounters a transient network error, it delegates rescheduling to the operating system.
 
-* **Transient Error Detection:** The native worker inspects the HTTP execution errors. It marks a failure as **transient** if it detects:
-  * Network timeouts (`SocketTimeoutException`, etc.)
-  * Connection or protocol drops (`ConnectException`, `SocketException`)
-  * DNS resolution failures (`UnknownHostException`, `NoRouteToHostException`)
-  * Transient server errors (HTTP statuses `503 Service Unavailable` or `504 Gateway Timeout`)
+* **Transient vs. per-item errors:** The worker separates two kinds of failure:
+  * **Connectivity failures** (the request never reached the server or the connection dropped mid-request: timeouts, `ConnectException`, `SocketException`, `UnknownHostException`, and the same for the presigned URL handshake and upload). These are transient. If Android reports no usable network, the worker waits up to 5 minutes for it and retries the same item; otherwise the run ends with `Result.retry()`.
+  * **HTTP error responses** (any 4xx or 5xx, including 503 and 504). The server was reached and rejected this record. The record is marked `failed` with the response in `Error`, a `failed` event is fired, and the run moves on to the next record. Failed records are selected again by the next run (the next `enqueueSync`, retry or WorkManager restart); they are not retried within the same run.
 * **Rescheduling (`Result.retry()`):** Instead of terminating with a hard failure, the worker returns `Result.retry()`.
 * **OS Constraints & Backoff:** WorkManager puts the task into a queue and applies:
   * **Network Constraint:** The task will **not** attempt to run again until the OS detects the device is online (satisfying the `NetworkType.CONNECTED` or `NetworkType.UNMETERED` constraint).
   * **Exponential Backoff:** Retries are delayed using an exponential backoff formula (starting at 10 seconds), preventing battery drain and avoiding server DDoS conditions.
+* **Stopped by the system:** When the network or charging constraint is lost, or a run without a foreground service reaches the background time limit, WorkManager stops the worker. The worker finishes the item in flight, records its status, shows a "paused" notification and exits; WorkManager starts it again when the system allows it (for a lost constraint, as soon as it is met again). Measured on Android 16: 3 to 6 seconds after the network comes back.
+* **`enqueueSync` while a run is in progress:** The running worker is kept (up to 1.0.4 it was cancelled and replaced). Records enqueued during a run are picked up by the same run when it reaches the end of its list, and at most one follow-up run is chained behind it for anything enqueued after its last check. This matters because the JS layer calls `enqueueSync` on every `online` event.
 * **App State Independence:** This mechanism runs natively. The retries will occur even if the user closes the application or locks their device.
 
 ### 2. iOS & WebView (Frontend Connectivity Listener)
@@ -49,3 +49,9 @@ When a retry occurs, it is critical that the plugin does not upload the same rec
 3. **No App-Side Reconciliation Needed:** Because the state lives directly in SQLite (the same database the JS API reads via `getQueuedRecords()` / `getSyncedRecords()` / `getCompletedDownloads()`), there is nothing to "commit" when the app reopens — the queue is already consistent on disk.
 
 This ensures that even if a sync cycle of 10 items is interrupted on the 5th item, the subsequent retry will resume exactly at the 6th item without duplication.
+
+Two cases can still send one record twice, and the server should treat a record id as idempotent:
+* The connection drops after the server stored the request but before the device read the response. The device cannot tell the difference from a failed upload, so it sends that record again.
+* On Android, only one worker run executes at a time in the app process: a cancelled run keeps its thread until the upload in flight returns, and the next run waits for it, so the in-flight record is never loaded by two runs at once.
+
+Records removed with `removeRecords` or `clearQueue` while a run is in progress are skipped by that run (Android), instead of being sent with an empty payload as in 1.0.4.

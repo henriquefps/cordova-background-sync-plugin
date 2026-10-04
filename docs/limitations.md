@@ -14,7 +14,14 @@ The plugin no longer attempts to auto-discover or write to the OutSystems applic
 * This completely isolates sync data from OutSystems local entities.
 * Developers must use the plugin's JavaScript API (`enqueueRecord`, `getQueuedRecords`, etc.) to interface with this database instead of executing direct SQL inserts/queries on OutSystems entities.
 
-### 3. iOS Background Life-cycle
+### 3. Android Background Execution
+The Android worker runs under WorkManager. Android 12 and later only let it become a foreground service while the app is visible, so a run that starts in the background (a retry after a network drop, a run resumed after a lost constraint or a reboot) runs as a regular background job:
+* It is limited to about 10 minutes per execution. When the system stops it, the worker finishes the item in flight, shows a "paused" notification and WorkManager starts it again later; no item is lost or sent twice because of the stop.
+* The progress notification still updates (it is posted directly, not through the foreground service), and the worker becomes a foreground service again as soon as the app is opened.
+* WorkManager also stops a foreground run when its network or charging constraint is lost, so after an airplane-mode cut the rest of the run is a background run.
+* Force-stopping the app (Settings, or `adb shell am force-stop`) cancels its scheduled work until the app is opened again; this is an Android rule. Swiping the app from recents, killing its process or rebooting the device does not lose the queue: WorkManager runs the work again by itself.
+
+### 4. iOS Background Life-cycle
 The upload loop runs inside a native background task assertion (`UIBackgroundTaskIdentifier`). If the user minimizes the app or locks the device, the native thread will continue execution in the background for a prolonged period (usually up to 1-3 minutes) before being gracefully suspended by the OS to prevent battery drain.
 
 > [!WARNING]
@@ -33,7 +40,7 @@ SQLite supports up to 1GB of text data in the `Payload` column. However, seriali
 * **Recommendation:** Limit the JSON payload text to a maximum of **5MB - 10MB** per record.
 
 ### 2. Media / Files Size Limits
-* **Android:** Uses 4KB streaming buffers, enabling virtually unlimited file upload sizes.
+* **Android:** Both strategies stream the file. `REST_PAYLOAD` encodes it to Base64 while writing the request body (fixed-length streaming, 64 KB buffers), so memory use does not grow with the file size; up to 1.0.4 it read the whole file and built the JSON body in memory (about 4 times the file size) and a 60 MB file crashed the worker with `OutOfMemoryError`. Verified with a 60 MB file on Android 16. Base64 still adds a third to the bytes on the wire, so `PRESIGNED_URL` remains the better choice for large media. A `filePath` that does not exist now marks the record `failed` ("Local file not found at path: ...") instead of sending the payload without the file.
 * **iOS:** Individual media uploads must be limited to a maximum of **50MB** to prevent OOM termination.
 
 ### 3. Server Configuration Gates
