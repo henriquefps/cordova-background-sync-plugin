@@ -6,6 +6,23 @@
 + (NSURL *)inspectorHtmlUrl;
 @end
 
+/**
+ * WKUserContentController keeps a strong reference to its script message handlers. Registering
+ * the view controller itself made a cycle (controller -> web view -> configuration -> content
+ * controller -> controller), so a closed inspector, its WKWebView and web content process were
+ * never released, one more per open. This proxy holds the controller weakly.
+ */
+@interface DatabaseInspectorWeakScriptHandler : NSObject <WKScriptMessageHandler>
+@property (nonatomic, weak) id<WKScriptMessageHandler> target;
+@end
+
+@implementation DatabaseInspectorWeakScriptHandler
+- (void)userContentController:(WKUserContentController *)userContentController
+      didReceiveScriptMessage:(WKScriptMessage *)message {
+  [self.target userContentController:userContentController didReceiveScriptMessage:message];
+}
+@end
+
 @implementation DatabaseInspectorViewController
 
 - (void)viewDidLoad {
@@ -23,7 +40,9 @@
       action:@selector(closeTapped)];
 
   WKUserContentController *contentController = [[WKUserContentController alloc] init];
-  [contentController addScriptMessageHandler:self name:@"inspectorBridge"];
+  DatabaseInspectorWeakScriptHandler *handler = [[DatabaseInspectorWeakScriptHandler alloc] init];
+  handler.target = self;
+  [contentController addScriptMessageHandler:handler name:@"inspectorBridge"];
 
   WKWebViewConfiguration *config = [[WKWebViewConfiguration alloc] init];
   config.userContentController = contentController;

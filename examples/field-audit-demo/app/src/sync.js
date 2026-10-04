@@ -26,6 +26,13 @@ export function whenDeviceReady() {
   });
 }
 
+// Test builds only: tests/ios can persist extra initialize options (for
+// example encryptDatabase) so they survive an app relaunch.
+function testOverrides() {
+  if (import.meta.env.VITE_TEST_CONTROL !== '1') return {};
+  try { return JSON.parse(localStorage.getItem('fieldbook.initOverrides') || '{}'); } catch { return {}; }
+}
+
 export function initialize() {
   return call('initialize', {
     serverUrl: SERVER_URL,
@@ -44,6 +51,7 @@ export function initialize() {
       failureTitle: 'Sync paused',
       failureBody: 'Upload interrupted. The queue resumes on its own when the device is back online.',
     },
+    ...testOverrides(),
   });
 }
 

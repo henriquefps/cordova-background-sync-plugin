@@ -22,12 +22,20 @@ The Android worker runs under WorkManager. Android 12 and later only let it beco
 * Force-stopping the app (Settings, or `adb shell am force-stop`) cancels its scheduled work until the app is opened again; this is an Android rule. Swiping the app from recents, killing its process or rebooting the device does not lose the queue: WorkManager runs the work again by itself.
 
 ### 4. iOS Background Life-cycle
-The upload loop runs inside a native background task assertion (`UIBackgroundTaskIdentifier`). If the user minimizes the app or locks the device, the native thread will continue execution in the background for a prolonged period (usually up to 1-3 minutes) before being gracefully suspended by the OS to prevent battery drain.
+On iOS the sync runs in a `UIApplication` background task (`beginBackgroundTaskWithName:`). The plugin does not use `BGTaskScheduler`, background fetch or a background `NSURLSession`, and it declares no `UIBackgroundModes`. In practice:
+* **Foreground:** the queue runs for as long as it needs, like on Android.
+* **App in the background or device locked:** the sync continues for the short window iOS grants, about 30 seconds (30 to 35 seconds measured on the iOS 26 simulator). When the window ends, the plugin stops at the next record (the record in flight finishes when the app runs again) and posts the "Sync paused" notification.
+* **Resume:** the run resumes on its own when the app returns to the foreground, or when the app calls `sync()`. Nothing is lost: records not yet sent stay `pending`.
+* **App closed (swiped away or killed):** the queue stops with the process. Completed records stay completed, and the next `sync()` continues with the rest. At most the record that was in flight when the app died is sent again.
+* Unlike Android's WorkManager, nothing restarts the queue while the app is not running.
 
-> [!WARNING]
-> **Critical alert on RAM consumption (iOS)**
-> When using the standard `REST_PAYLOAD` upload strategy, the native iOS implementation loads the entire media file to be uploaded into the device's RAM at once (`[NSData dataWithContentsOfFile:...]`) to convert it to Base64. Extremely large video files or uncompressed photos can trigger an Out-Of-Memory (OOM) crash, causing the OS to terminate the application.
-> * **Bypass Recommendation:** Use the `PRESIGNED_URL` upload strategy, which uses `NSInputStream` to stream binary data directly from storage in chunks without loading the entire file into RAM.
+> [!NOTE]
+> **Migration: background modes removed**
+> Up to 1.0.4, the plugin's `plugin.xml` added the iOS background modes `fetch` and `processing` to the app's `Info.plist`, although its iOS code used neither. They are no longer added. If your app uses them for its own code (a background fetch handler or `BGTaskScheduler` tasks), declare them in your app yourself, with `BGTaskSchedulerPermittedIdentifiers` for `processing`. Capacitor apps are not affected: Capacitor never applied these plugin entries.
+
+> [!NOTE]
+> **Memory use (iOS)**
+> `REST_PAYLOAD` uploads write the request body (JSON with the base64 file) to a temporary file in chunks and stream it, so memory use does not grow with the file size (a 70 MB file: 56 MB app footprint during the upload). The temporary file needs free storage of about 1.35 times the file size while the record is sent. `PRESIGNED_URL` uploads stream the file itself and also avoid the base64 overhead on the wire.
 
 ---
 
@@ -41,7 +49,7 @@ SQLite supports up to 1GB of text data in the `Payload` column. However, seriali
 
 ### 2. Media / Files Size Limits
 * **Android:** Both strategies stream the file. `REST_PAYLOAD` encodes it to Base64 while writing the request body (fixed-length streaming, 64 KB buffers), so memory use does not grow with the file size; up to 1.0.4 it read the whole file and built the JSON body in memory (about 4 times the file size) and a 60 MB file crashed the worker with `OutOfMemoryError`. Verified with a 60 MB file on Android 16. Base64 still adds a third to the bytes on the wire, so `PRESIGNED_URL` remains the better choice for large media. A `filePath` that does not exist now marks the record `failed` ("Local file not found at path: ...") instead of sending the payload without the file.
-* **iOS:** Individual media uploads must be limited to a maximum of **50MB** to prevent OOM termination.
+* **iOS:** `REST_PAYLOAD` uploads are streamed from disk (see above), so the file size is limited by the server, the network and, in the background, the 30-second window rather than by memory. Tested with 20 MB and 70 MB files on the simulator. For large files, `PRESIGNED_URL` still sends a third less data.
 
 ### 3. Server Configuration Gates
 Web servers hosting exposed endpoints (e.g. IIS, Nginx) have a default upload limit per request. Uploads exceeding this threshold will fail at the server gate unless adjusted within the server configuration files.

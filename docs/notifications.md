@@ -11,7 +11,7 @@ To ensure a non-intrusive user experience, notifications are split into two cate
 ### 1. Silent Progress Notifications
 During an active synchronization loop, the plugin updates the progress tray frequently (e.g., *Sincronizando: 3 de 10 registros (30%)*).
 * **Android Implementation:** Progress notifications are sent to a dedicated channel (`localstorage_sync_progress_channel`) configured with **`IMPORTANCE_LOW`**. This means the progress bar updates silently without making sound, vibrating, or interrupting the user. The progress is updated at most once per second (Android drops notification updates posted faster than a few per second).
-* **iOS Implementation:** Local notifications sent during progress do not include the default system sound. They update silently in the iOS Notification Center.
+* **iOS Implementation:** Each progress update replaces the previous one in Notification Center, without sound or banner (passive interruption level, iOS 15+), at most once per second. iOS shows notifications only while the app is in the background; in the foreground they go straight to Notification Center.
 
 ### 2. Alert Notifications (With Sound & Vibration)
 Critical changes in synchronization states emit alerts to notify the operator that the process is finished or suspended.
@@ -113,4 +113,4 @@ syncEngine.requestNotificationsPermission(
 If the permission is denied, the sync still runs (and still uses the foreground service when allowed); Android simply does not show its notifications. Verified on Android 16.
 
 ### iOS
-On iOS, the plugin automatically requests authorization for alerts and sounds (`UNAuthorizationOptionAlert | UNAuthorizationOptionSound`) upon posting the first notification.
+On iOS, `requestNotificationsPermission()` shows the system prompt for alerts and sounds (`UNAuthorizationOptionAlert | UNAuthorizationOptionSound`) the first time and resolves with `true` or `false`; later calls resolve with the stored answer without a prompt. If the app never calls it, the plugin asks when it posts its first notification, which is at the start of the first sync. If the user declines, the sync runs the same, without notifications.

@@ -8,7 +8,9 @@
 //   PORT=8791 RATE_MBPS=24 node server.mjs  cap ingest at 24 Mbit/s (see README)
 //   FAULTS='[{"status":500,"every":7}]' node server.mjs   start with fault rules
 //
-// Test support (used by ../tests, see tests/README.md):
+// Test support for the Android scripts (../tests, see tests/README.md), always
+// on. The iOS suite uses its own layer, test-api.mjs, loaded with TEST_API=1
+// and checked first; with it on, its /api/test/log answers instead of this one.
 //   POST /api/faults      replace the fault rules (JSON array), DELETE clears them
 //   GET  /api/test/log    every request seen per record id (method, status, md5)
 //   POST /api/v1/test/records          generic REST_PAYLOAD sink for any payload
@@ -23,6 +25,10 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFile } from 'node:child_process';
 import crypto from 'node:crypto';
+
+// Optional test API (fault injection, remote control of a test build, extra
+// endpoints). Loaded only with TEST_API=1; see test-api.mjs.
+const testApi = process.env.TEST_API === '1' ? await import('./test-api.mjs') : null;
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT || 8791);
@@ -194,6 +200,7 @@ async function handleUpload(req, res) {
   if (await applyFault(pickFault(req.url, p.photoId), req, res)) { logTest(p.photoId, { path: req.url, fault: true }); return; }
   if (!p.photoId || !p.findingId || !body.file?.base64Data) return send(res, 422, { error: 'payload.photoId, payload.findingId and file are required' });
   if (!findingIndex[p.findingId]) return send(res, 409, { error: `unknown finding ${p.findingId}` });
+  if (testApi?.applyFault(req, res, p.photoId)) return;
 
   const bin = Buffer.from(body.file.base64Data, 'base64');
   logTest(p.photoId, { path: req.url, status: 200, bytes: bin.length, md5: md5(bin) });
@@ -319,6 +326,7 @@ async function handleTestDownload(req, res, url) {
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
   try {
+    if (testApi && (await testApi.handleTestApi(req, res, url))) return;
     if (req.method === 'POST' && url.pathname === '/api/v1/audits/photos') return await handleUpload(req, res);
     if (req.method === 'POST' && url.pathname === '/api/v1/test/records') return await handleTestRecord(req, res);
     if (req.method === 'POST' && url.pathname === '/api/v1/test/presign') return await handlePresign(req, res);
@@ -383,5 +391,5 @@ const server = http.createServer(async (req, res) => {
 
 server.requestTimeout = 0;
 server.listen(PORT, () => {
-  console.log(`Backoffice on http://localhost:${PORT} (emulator: http://10.0.2.2:${PORT}), ingest cap ${rateMbps ? rateMbps + ' Mbit/s' : 'off'}`);
+  console.log(`Backoffice on http://localhost:${PORT} (emulator: http://10.0.2.2:${PORT}), ingest cap ${rateMbps ? rateMbps + ' Mbit/s' : 'off'}${testApi ? ', test API on' : ''}`);
 });

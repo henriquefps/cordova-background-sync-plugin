@@ -9,6 +9,21 @@ import {
 import data from './data/audit.json';
 import * as sync from './sync.js';
 
+const IOS = Capacitor.getPlatform() === 'ios';
+// Platform wording: Android runs the queue in WorkManager, iOS in a
+// background task that ends about 30 s after the app leaves the screen.
+const TEXT = IOS
+  ? {
+      trigger: 'Sync handed to the native iOS sync task',
+      waiting: 'Interrupted. The queue resumes on its own',
+      hint: 'You can leave the app. iOS keeps sending for about 30 s, then the queue resumes when you come back.',
+    }
+  : {
+      trigger: 'Sync handed to Android WorkManager',
+      waiting: 'Interrupted. Android will retry on its own',
+      hint: 'You can lock the phone or leave the app. Android keeps sending.',
+    };
+
 const AUDITS = data.audits;
 const MAIN = AUDITS[0];
 const ALL_PHOTOS = MAIN.areas.flatMap((a) => a.findings.flatMap((f) => f.photos.map((p) => ({ ...p, findingId: f.id, areaId: a.id }))));
@@ -171,7 +186,7 @@ function useSyncEngine() {
       addLog('queue', `${todo.length} photos added to the plugin queue`);
     }
     await sync.triggerSync();
-    addLog('trigger', 'Sync handed to Android WorkManager');
+    addLog('trigger', TEXT.trigger);
     setPhase((p) => (p === 'preparing' || p === 'idle' || p === 'done' ? 'running' : p));
     setPrep(null);
     refresh();
@@ -419,7 +434,7 @@ function SyncScreen({ engine, back }) {
   if (done) state = { cls: 'ok', Icon: CheckCircle2, text: 'All photos are on the server' };
   else if (engine.phase === 'preparing') state = { cls: 'run', Icon: ListChecks, text: `Adding photos to the queue, ${engine.prep?.done || 0} of ${engine.prep?.total || 0}` };
   else if (!engine.online) state = { cls: 'warn', Icon: WifiOff, text: 'Offline. The queue waits for the network' };
-  else if (engine.phase === 'waiting') state = { cls: 'warn', Icon: RotateCw, text: 'Interrupted. Android will retry on its own' };
+  else if (engine.phase === 'waiting') state = { cls: 'warn', Icon: RotateCw, text: TEXT.waiting };
   else if (engine.phase === 'running' || engine.queued.length) state = { cls: 'run', Icon: RotateCw, text: 'Sending in the background' };
   else state = { cls: 'idle', Icon: CloudUpload, text: 'Ready to sync' };
 
@@ -456,7 +471,7 @@ function SyncScreen({ engine, back }) {
       )}
 
       {!done && (
-        <div className="hint"><Lock size={15} />You can lock the phone or leave the app. Android keeps sending.</div>
+        <div className="hint"><Lock size={15} />{TEXT.hint}</div>
       )}
 
       <div className="log">
@@ -485,6 +500,19 @@ export default function App() {
   const back = useCallback(() => setStack((s) => (s.length > 1 ? s.slice(0, -1) : s)), []);
   const stackRef = useRef(stack);
   stackRef.current = stack;
+
+  // Test builds only (VITE_TEST_CONTROL=1): let tests/ios drive the app.
+  useEffect(() => {
+    if (import.meta.env.VITE_TEST_CONTROL !== '1') return;
+    window.__fieldbook = {
+      startSync: () => engine.startSync(),
+      refresh: () => engine.refresh(),
+      go: (name) => setStack(name === 'sync'
+        ? [{ name: 'audits' }, { name: 'audit', id: MAIN.id }, { name: 'sync' }]
+        : name === 'audit' ? [{ name: 'audits' }, { name: 'audit', id: MAIN.id }] : [{ name: 'audits' }]),
+      state: () => ({ phase: engine.phase, run: engine.run, queued: engine.queued.length, synced: engine.synced.length, online: engine.online }),
+    };
+  }, [engine]);
 
   useEffect(() => {
     let sub;

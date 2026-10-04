@@ -6,7 +6,7 @@ This document explains the technical implementation, database configurations, an
 
 ## 1. Architectural Strategy
 
-Standard background uploads convert files to Base64 and wrap them inside JSON request bodies. This adds a **33% network footprint overhead** and forces hybrid WebViews and native processes to load entire media blobs into the device's RAM, triggering Out-Of-Memory (OOM) background task terminations on iOS when handling files larger than 20MB.
+Standard background uploads convert files to Base64 and wrap them inside JSON request bodies. This adds a **33% network footprint overhead**, and the native code has to read and encode the whole file for every record (on iOS the body is streamed through a temporary file, so memory stays flat, but it still costs storage and time).
 
 **The Solution:**
 Enable direct streaming uploads to Object Storage. The plugin nativelly handles a two-step handshake:

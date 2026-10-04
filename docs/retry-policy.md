@@ -28,8 +28,15 @@ On Android, the plugin leverages the Jetpack `WorkManager` API. When a sync work
 * **`enqueueSync` while a run is in progress:** The running worker is kept (up to 1.0.4 it was cancelled and replaced). Records enqueued during a run are picked up by the same run when it reaches the end of its list, and at most one follow-up run is chained behind it for anything enqueued after its last check. This matters because the JS layer calls `enqueueSync` on every `online` event.
 * **App State Independence:** This mechanism runs natively. The retries will occur even if the user closes the application or locks their device.
 
-### 2. iOS & WebView (Frontend Connectivity Listener)
-Because iOS does not allow suspended apps to wake up immediately upon network changes, the plugin implements a hybrid WebView fallback listener that covers iOS and coordinates foreground recovery.
+### 2. iOS (Native Retry While the App Runs) & WebView (Connectivity Listener)
+Because iOS does not allow suspended apps to wake up upon network changes, recovery on iOS happens while the app is running:
+
+* **Native retry with backoff:** when an upload or download fails with a connectivity error (timeout, connection lost or refused, DNS failure), the run stops and the plugin retries it after 10 seconds, then 20, 40, 80, 160 and every 300 seconds, while the app process is alive. This also covers a server that is down while the device is still online, a case the `online` event below never sees.
+* **Back to the foreground:** a run interrupted by a connectivity error or by the end of the background time resumes as soon as the app becomes active.
+* **`cancelSync()`** stops these automatic retries until the next `sync()`.
+* An HTTP error response (4xx, 5xx) is not retried automatically on iOS: the record is marked `failed`, the rest of the queue goes on, and the record is sent again by the next `sync()`.
+
+The WebView listener also applies, on both platforms:
 
 * **Connectivity Listener:** The JavaScript bridge registers a global listener for browser connection changes:
   ```javascript

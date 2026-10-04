@@ -69,13 +69,6 @@
             </feature>
         </config-file>
 
-        <config-file target="*-Info.plist" parent="UIBackgroundModes">
-            <array>
-                <string>fetch</string>
-                <string>processing</string>
-            </array>
-        </config-file>
-
         <config-file target="*-Info.plist" parent="NSLocalNetworkUsageDescription">
             <string>This app needs network access to synchronize background data and assets to the server.</string>
         </config-file>
