@@ -1384,6 +1384,95 @@ static id BSSyncArgument(CDVInvokedUrlCommand *command, NSUInteger index) {
   return nil;
 }
 
+static NSString *BSSyncMimeType(NSString *path) {
+  NSString *extension = [path pathExtension].lowercaseString;
+  if ([extension isEqualToString:@"jpg"] || [extension isEqualToString:@"jpeg"]) return @"image/jpeg";
+  if ([extension isEqualToString:@"png"]) return @"image/png";
+  if ([extension isEqualToString:@"gif"]) return @"image/gif";
+  if ([extension isEqualToString:@"pdf"]) return @"application/pdf";
+  if ([extension isEqualToString:@"mp4"]) return @"video/mp4";
+  return @"application/octet-stream";
+}
+
+static NSJSONWritingOptions BSSyncJSONOptions(void) {
+  // Base64 and URLs are full of "/", which NSJSONSerialization escapes as "\/" by default.
+  if (@available(iOS 13.0, *)) return NSJSONWritingWithoutEscapingSlashes;
+  return 0;
+}
+
+// A JSON string literal (with quotes) for `value`.
+static NSData *BSSyncJSONString(NSString *value) {
+  NSData *array = [NSJSONSerialization dataWithJSONObject:@[value ?: @""] options:BSSyncJSONOptions() error:nil];
+  return [array subdataWithRange:NSMakeRange(1, array.length - 2)];
+}
+
+// Writes the REST_PAYLOAD request body, {"payload": ..., "file": {"filename", "contentType",
+// "base64Data"}} (docs/rest-api-signature.md), to a temporary file. The file is read and
+// base64-encoded in chunks, so only one chunk is in memory at a time instead of the file, its
+// base64 copy and the serialized body all at once (about 4x the file size before). Returns
+// the body file path, or nil with *errorOut set.
+- (NSString *)writeRestPayloadBodyWithPayload:(NSString *)payload filePath:(NSString *)filePath error:(NSString **)errorOut {
+  NSMutableDictionary *requestDict = [NSMutableDictionary dictionary];
+  NSError *jsonError = nil;
+  id parsedPayload = [NSJSONSerialization JSONObjectWithData:[payload ?: @"" dataUsingEncoding:NSUTF8StringEncoding] options:NSJSONReadingAllowFragments error:&jsonError];
+  requestDict[@"payload"] = (jsonError || !parsedPayload) ? (payload ?: @"") : parsedPayload;
+  NSData *head = [NSJSONSerialization dataWithJSONObject:requestDict options:BSSyncJSONOptions() error:nil];
+  if (!head) {
+    *errorOut = @"Local error: the payload could not be serialized to JSON.";
+    return nil;
+  }
+
+  NSString *bodyPath = [NSTemporaryDirectory() stringByAppendingPathComponent:[NSString stringWithFormat:@"bg-sync-body-%@.json", [[NSUUID UUID] UUIDString]]];
+  if (![[NSFileManager defaultManager] createFileAtPath:bodyPath contents:nil attributes:nil]) {
+    *errorOut = @"Local error: could not create the request body file.";
+    return nil;
+  }
+  NSFileHandle *out = [NSFileHandle fileHandleForWritingAtPath:bodyPath];
+
+  NSString *cleanPath = [filePath stringByReplacingOccurrencesOfString:@"file://" withString:@""];
+  BOOL isDirectory = NO;
+  BOOL hasFile = cleanPath.length > 0 && [[NSFileManager defaultManager] fileExistsAtPath:cleanPath isDirectory:&isDirectory] && !isDirectory;
+  NSFileHandle *in = hasFile ? [NSFileHandle fileHandleForReadingAtPath:cleanPath] : nil;
+  if (hasFile && !in) {
+    [out closeFile];
+    [[NSFileManager defaultManager] removeItemAtPath:bodyPath error:nil];
+    *errorOut = [NSString stringWithFormat:@"Local error: could not read file at path: %@", cleanPath];
+    return nil;
+  }
+
+  @try {
+    if (!in) {
+      [out writeData:head];
+    } else {
+      // head is {"payload":...}; drop its closing brace and append the file object.
+      [out writeData:[head subdataWithRange:NSMakeRange(0, head.length - 1)]];
+      NSMutableData *fileHead = [NSMutableData dataWithData:[@",\"file\":{\"filename\":" dataUsingEncoding:NSUTF8StringEncoding]];
+      [fileHead appendData:BSSyncJSONString([cleanPath lastPathComponent])];
+      [fileHead appendData:[@",\"contentType\":" dataUsingEncoding:NSUTF8StringEncoding]];
+      [fileHead appendData:BSSyncJSONString(BSSyncMimeType(cleanPath))];
+      [fileHead appendData:[@",\"base64Data\":\"" dataUsingEncoding:NSUTF8StringEncoding]];
+      [out writeData:fileHead];
+      for (;;) {
+        @autoreleasepool {
+          NSData *chunk = [in readDataOfLength:3 * 256 * 1024];  // a multiple of 3: no padding mid-stream
+          if (chunk.length == 0) break;
+          [out writeData:[chunk base64EncodedDataWithOptions:0]];
+        }
+      }
+      [out writeData:[@"\"}}" dataUsingEncoding:NSUTF8StringEncoding]];
+    }
+  } @catch (NSException *exception) {
+    [in closeFile];
+    [out closeFile];
+    [[NSFileManager defaultManager] removeItemAtPath:bodyPath error:nil];
+    *errorOut = [NSString stringWithFormat:@"Local error: could not write the request body: %@", exception.reason];
+    return nil;
+  }
+  [in closeFile];
+  [out closeFile];
+  return bodyPath;
+}
+
 // Returns nil on success, or an error description on failure. A "Upload Exception:" prefix
 // means the request never reached the server (network/timeout/DNS) — a genuine connectivity
 // failure. An "HTTP $code:" prefix means the server was reached and responded with an error
@@ -1406,55 +1495,21 @@ static id BSSyncArgument(CDVInvokedUrlCommand *command, NSUInteger index) {
     }
   }
 
-  NSMutableDictionary *requestDict = [NSMutableDictionary dictionary];
-  NSError *jsonError = nil;
-  id parsedPayload = [NSJSONSerialization JSONObjectWithData:[payload dataUsingEncoding:NSUTF8StringEncoding] options:NSJSONReadingAllowFragments error:&jsonError];
-  if (jsonError || !parsedPayload) {
-    requestDict[@"payload"] = payload;
-  } else {
-    requestDict[@"payload"] = parsedPayload;
+  NSString *bodyError = nil;
+  NSString *bodyPath = [self writeRestPayloadBodyWithPayload:payload filePath:filePath error:&bodyError];
+  if (!bodyPath) {
+    LogDebug(@"Error: %@", bodyError);
+    return bodyError;
   }
-
-  if (filePath && filePath.length > 0) {
-    NSString *cleanPath = [filePath stringByReplacingOccurrencesOfString:@"file://" withString:@""];
-    NSFileManager *fileManager = [NSFileManager defaultManager];
-    if ([fileManager fileExistsAtPath:cleanPath]) {
-      NSString *fileName = [cleanPath lastPathComponent];
-      NSData *fileData = [NSData dataWithContentsOfFile:cleanPath];
-      NSString *base64Data = [fileData base64EncodedStringWithOptions:0];
-
-      NSString *mimeType = @"application/octet-stream";
-      NSString *extension = [fileName pathExtension].lowercaseString;
-      if ([extension isEqualToString:@"jpg"] || [extension isEqualToString:@"jpeg"]) {
-        mimeType = @"image/jpeg";
-      } else if ([extension isEqualToString:@"png"]) {
-        mimeType = @"image/png";
-      } else if ([extension isEqualToString:@"gif"]) {
-        mimeType = @"image/gif";
-      } else if ([extension isEqualToString:@"pdf"]) {
-        mimeType = @"application/pdf";
-      } else if ([extension isEqualToString:@"mp4"]) {
-        mimeType = @"video/mp4";
-      }
-
-      NSMutableDictionary *fileDict = [NSMutableDictionary dictionary];
-      fileDict[@"filename"] = fileName;
-      fileDict[@"contentType"] = mimeType;
-      fileDict[@"base64Data"] = base64Data;
-
-      requestDict[@"file"] = fileDict;
-    }
-  }
-
-  NSData *bodyData = [NSJSONSerialization dataWithJSONObject:requestDict options:0 error:nil];
-  [request setHTTPBody:bodyData];
 
   __block NSData *responseData = nil;
   __block NSURLResponse *response = nil;
   __block NSError *error = nil;
   dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
 
-  NSURLSessionDataTask *task = [[NSURLSession sharedSession] dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *r, NSError *e) {
+  // Upload from the body file: NSURLSession streams it, so memory use no longer grows with
+  // the file size.
+  NSURLSessionUploadTask *task = [[NSURLSession sharedSession] uploadTaskWithRequest:request fromFile:[NSURL fileURLWithPath:bodyPath] completionHandler:^(NSData *data, NSURLResponse *r, NSError *e) {
       responseData = data;
       response = r;
       error = e;
@@ -1462,6 +1517,7 @@ static id BSSyncArgument(CDVInvokedUrlCommand *command, NSUInteger index) {
   }];
   [task resume];
   dispatch_semaphore_wait(semaphore, DISPATCH_TIME_FOREVER);
+  [[NSFileManager defaultManager] removeItemAtPath:bodyPath error:nil];
 
   if (error) {
     LogDebug(@"Error: Background Upload Request Failed: %@", error.localizedDescription);
@@ -1581,18 +1637,7 @@ static id BSSyncArgument(CDVInvokedUrlCommand *command, NSUInteger index) {
   }
 
   if (![uploadRequest valueForHTTPHeaderField:@"Content-Type"]) {
-    NSString *mimeType = @"application/octet-stream";
-    NSString *extension = [cleanPath pathExtension].lowercaseString;
-    if ([extension isEqualToString:@"jpg"] || [extension isEqualToString:@"jpeg"]) {
-      mimeType = @"image/jpeg";
-    } else if ([extension isEqualToString:@"png"]) {
-      mimeType = @"image/png";
-    } else if ([extension isEqualToString:@"gif"]) {
-      mimeType = @"image/gif";
-    } else if ([extension isEqualToString:@"pdf"]) {
-      mimeType = @"application/pdf";
-    }
-    [uploadRequest setValue:mimeType forHTTPHeaderField:@"Content-Type"];
+    [uploadRequest setValue:BSSyncMimeType(cleanPath) forHTTPHeaderField:@"Content-Type"];
   }
 
   NSInputStream *fileStream = [NSInputStream inputStreamWithFileAtPath:cleanPath];
