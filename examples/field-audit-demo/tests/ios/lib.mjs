@@ -104,7 +104,8 @@ export function footprintMB(pid = appPid()) {
 // ------------------------------------------------------------------ checking
 export const md5File = (f) => crypto.createHash('md5').update(fs.readFileSync(f)).digest('hex');
 export function md5Report() {
-  const dir = path.join(DEMO_DIR, 'backoffice/data', AUDIT.id);
+  // Same DATA_DIR as the backoffice when it runs with one.
+  const dir = path.join(process.env.DATA_DIR ? path.resolve(process.env.DATA_DIR) : path.join(DEMO_DIR, 'backoffice/data'), AUDIT.id);
   let match = 0; const missing = []; const bad = [];
   for (const p of PHOTOS) {
     const got = path.join(dir, `${p.id}.jpg`);

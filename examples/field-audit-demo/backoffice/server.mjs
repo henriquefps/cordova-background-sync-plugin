@@ -7,6 +7,7 @@
 //   node server.mjs                       listen on :8791
 //   PORT=8791 RATE_MBPS=24 node server.mjs  cap ingest at 24 Mbit/s (see README)
 //   FAULTS='[{"status":500,"every":7}]' node server.mjs   start with fault rules
+//   DATA_DIR=/some/dir node server.mjs    store received files there (default: ./data)
 //
 // Test support for the Android scripts (../tests, see tests/README.md), always
 // on. The iOS suite uses its own layer, test-api.mjs, loaded with TEST_API=1
@@ -32,7 +33,8 @@ const testApi = process.env.TEST_API === '1' ? await import('./test-api.mjs') : 
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT || 8791);
-const DATA_DIR = path.join(HERE, 'data');
+// DATA_DIR keeps two instances (for example the Android and iOS test runs) apart.
+const DATA_DIR = process.env.DATA_DIR ? path.resolve(process.env.DATA_DIR) : path.join(HERE, 'data');
 const PUBLIC_DIR = path.join(HERE, 'public');
 const AUDIT_JSON = path.join(HERE, '..', 'app', 'src', 'data', 'audit.json');
 const API_KEY = process.env.API_KEY || 'demo-device-key';

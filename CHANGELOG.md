@@ -33,7 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Android: upload events match iOS. `onProgress` fires after each successful upload with `completedCount` = records sent so far (1..N), `onFailed` carries the records sent so far, and `onCompleted` counts the items that succeeded. Up to 1.0.4 Android fired `onProgress` before each upload with the position of the record. Download progress still fires before each download on both platforms.
-- Android: progress notification updates are limited to one per second, and per-item HTTP errors are summarized in the final notification.
+- Android: progress notification updates are limited to one per second and shown at once (Android 12+ may otherwise hold back a foreground service notification for 10 s), and per-item HTTP errors are summarized in the final notification.
 - Android: when a connection fails while Android reports no usable network, the worker waits up to 5 minutes for it and retries the same record.
 - iOS: the plugin no longer adds the `fetch` and `processing` background modes to the app's `Info.plist`; its iOS code never used them. The sync runs in the foreground, continues for the short background window iOS grants (about 30 seconds), then pauses and resumes when the app returns or calls `sync()`, with nothing lost. Apps that use these modes for their own code must declare them themselves.
 - Docs: `autoDeleteCompleted` also deletes each upload once it is sent (behaviour on both platforms); Android notification lifecycle, retry and background limits; iOS background limits, retry, memory and notification behaviour; event counts.

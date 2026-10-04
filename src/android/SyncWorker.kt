@@ -913,6 +913,8 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
             .setProgress(100, progress, false)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
+            // Android 12+ may hold back a foreground service notification for up to 10 s.
+            .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
             .build()
     }
 

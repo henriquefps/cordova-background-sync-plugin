@@ -38,6 +38,8 @@ VITE_TEST_CONTROL=1 scripts/ios-build.sh
 scripts/ios-seed.sh                    # boots the simulator, installs, copies the photos
 xcrun simctl launch booted com.hfps.fieldaudit   # allow notifications when asked
 node tests/ios/run.mjs                 # every case, about 15 minutes
+# With a second backoffice running (for example the Android tests on 8791),
+# give this one its own DATA_DIR and pass the same DATA_DIR to run.mjs.
 node tests/ios/run.mjs cancel downloads   # or some of them
 ```
 

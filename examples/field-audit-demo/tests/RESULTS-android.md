@@ -83,6 +83,32 @@ All fixes are in commit `5e80fa8` (src/android only).
 | 10 | `executeRawQuery` rejects `WITH ... SELECT` | `raw-query`: "Queries can be performed using SQLiteDatabase query or rawQuery methods only" | Only `SELECT`/`PRAGMA` went to `rawQuery` | `WITH`, `EXPLAIN`, `VALUES` also go to `rawQuery` | pass |
 | 11 | Empty queue: every `enqueueSync` (every `online` event) started the foreground service and posted "Synchronization Complete" | code review | Success notification posted for zero records | Nothing posted, no foreground service | `empty-queue` pass |
 
+## Release branch (1.0.5): cancelSync event and event counts
+
+Two more changes after the matrix below, on the merged release branch:
+
+| # | Change | Before | After (emulator) |
+| --- | --- | --- | --- |
+| 12 | `cancelSync` sends the documented `onFailed` "Synchronization cancelled by user" (iOS already did) | no event on Android | `cancel-resync`: exactly one event, `completedCount` 10 of 30 = the records on the server, no notification; `enqueue-during-run`: 0 `onFailed` (a chained run is not a cancellation) |
+| 13 | Upload event counts aligned with iOS: `onProgress` after each successful upload (records sent so far), `onFailed` with records sent so far, `onCompleted` counts successes | progress before each attempt (position), failed with position - 1 | `event-counts` (6 records, HTTP 500 on the 3rd): `started:0/6 progress:1/6 progress:2/6 failed:2/6 progress:3/6 progress:4/6 progress:5/6 completed:5/6` |
+
+Whole matrix rerun on the release branch (`all --slow`, 40 checks): 39 pass on
+the first run. `force-stop` failed once: Android started the WorkManager job
+process 70 ms after the force stop (logcat: `Start proc ... for service
+SystemJobService` right after `Force stopping`), so uploads went on while the
+app was stopped; the queue stayed intact (40 delivered, 1 in-flight re-send).
+The plugin cannot prevent this; two reruns passed.
+
+With progress now posted after each sent record, the first progress update
+comes later and Android 16 held the foreground service notification back for
+about 10 s (no notification in the 3, 6 and 9 s samples). The progress
+notification is now marked `FOREGROUND_SERVICE_IMMEDIATE`; rerun of
+`notification-background.mjs` on the release build: `Photo 4 of 336` at 3 s
+with 4 photos on the server, advancing to 336, final `Audit synced`, nothing
+ongoing. Rerun after that change: `full-sync` (336/336, md5 identical),
+`event-counts`, `cancel-resync`, `enqueue-during-run`, `http-errors`,
+`screen-off` all pass.
+
 ## Test matrix (final build)
 
 Run with `node tests/scenarios.mjs all --slow` on the final build, plus
