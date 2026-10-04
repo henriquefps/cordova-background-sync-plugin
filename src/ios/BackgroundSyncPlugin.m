@@ -20,6 +20,7 @@
 @property (nonatomic, assign) BOOL resumeWhenActive;
 @property (nonatomic, assign) NSUInteger retryGeneration;
 @property (nonatomic, assign) NSTimeInterval retryDelay;
+@property (atomic, assign) CFAbsoluteTime lastSilentNotificationAt;
 @end
 
 // How a sync run ended (see -finishSyncRunWithOutcome:).
@@ -1676,14 +1677,25 @@ static NSData *BSSyncJSONString(NSString *value) {
   content.body = body;
   if (!isSilent) {
     content.sound = [UNNotificationSound defaultSound];
+  } else if (@available(iOS 15.0, *)) {
+    // Progress updates go to Notification Center without a banner.
+    content.interruptionLevel = UNNotificationInterruptionLevelPassive;
   }
 
-  UNTimeIntervalNotificationTrigger *trigger = [UNTimeIntervalNotificationTrigger triggerWithTimeInterval:1 repeats:NO];
-  UNNotificationRequest *request = [UNNotificationRequest requestWithIdentifier:@"LocalStorageSyncNotification" content:content trigger:trigger];
+  // Delivered right away (nil trigger). The previous 1 s time trigger shared one identifier, so
+  // each new update replaced the still-pending one: when records finished less than a second
+  // apart, no progress notification was ever delivered until the run stopped.
+  UNNotificationRequest *request = [UNNotificationRequest requestWithIdentifier:@"LocalStorageSyncNotification" content:content trigger:nil];
   [[UNUserNotificationCenter currentNotificationCenter] addNotificationRequest:request withCompletionHandler:nil];
 }
 
 - (void)sendLocalNotificationWithTitle:(NSString *)title body:(NSString *)body isSilent:(BOOL)isSilent {
+  if (isSilent) {
+    // At most one silent progress update per second; alerts (success, failure) always go out.
+    CFAbsoluteTime now = CFAbsoluteTimeGetCurrent();
+    if (now - self.lastSilentNotificationAt < 1.0) return;
+    self.lastSilentNotificationAt = now;
+  }
   if (@available(iOS 10.0, *)) {
     // A sync cycle can post one notification per record (dozens in a large batch). Once we
     // know the authorization answer for this process, reuse it instead of paying for an async
