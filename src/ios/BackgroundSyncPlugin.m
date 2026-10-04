@@ -14,6 +14,39 @@
 @property (nonatomic, assign) BOOL notificationAuthorizationGranted;
 @end
 
+// JS values arrive as NSString, NSNumber, NSNull, NSArray or NSDictionary. These helpers turn
+// what the API documents as text into NSString, so a number (e.g. an id of 123) is stored as
+// "123" the way Android's JSONArray.getString/optString does, and anything else (null, objects,
+// arrays) is treated as absent instead of crashing on a selector NSString-only code relies on.
+static NSString *BSSyncString(id value) {
+  if ([value isKindOfClass:[NSString class]]) return value;
+  if ([value isKindOfClass:[NSNumber class]]) return [value stringValue];
+  return nil;
+}
+
+static NSDictionary *BSSyncDictionary(id value) {
+  return [value isKindOfClass:[NSDictionary class]] ? value : nil;
+}
+
+// Keeps only string keys with string or number values (numbers become text). Header values
+// and notification texts are written to NSUserDefaults and into HTTP headers, and both reject
+// NSNull and other non-property-list values with an exception.
+static NSDictionary *BSSyncStringDictionary(id value) {
+  NSMutableDictionary *out = [NSMutableDictionary dictionary];
+  NSDictionary *dict = BSSyncDictionary(value);
+  for (id key in dict) {
+    NSString *stringValue = BSSyncString(dict[key]);
+    if ([key isKindOfClass:[NSString class]] && stringValue) out[key] = stringValue;
+  }
+  return out;
+}
+
+// Argument `index` of a command, or nil when it is missing or JS passed null.
+static id BSSyncArgument(CDVInvokedUrlCommand *command, NSUInteger index) {
+  id value = command.arguments.count > index ? command.arguments[index] : nil;
+  return [value isKindOfClass:[NSNull class]] ? nil : value;
+}
+
 @implementation BackgroundSyncPlugin
 
 @synthesize serverUrl;
@@ -32,8 +65,8 @@
   NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
   self.serverUrl = [defaults stringForKey:@"BackgroundSyncPlugin_ServerUrl"];
   self.queueTableName = [defaults stringForKey:@"BackgroundSyncPlugin_QueueTableName"];
-  self.headers = [defaults dictionaryForKey:@"BackgroundSyncPlugin_Headers"];
-  self.notificationTexts = [defaults dictionaryForKey:@"BackgroundSyncPlugin_NotificationTexts"];
+  self.headers = BSSyncStringDictionary([defaults dictionaryForKey:@"BackgroundSyncPlugin_Headers"]);
+  self.notificationTexts = BSSyncStringDictionary([defaults dictionaryForKey:@"BackgroundSyncPlugin_NotificationTexts"]);
 
   if ([defaults objectForKey:@"BackgroundSyncPlugin_EnableNotifications"] == nil) {
     self.enableNotifications = YES;
@@ -61,10 +94,10 @@
 }
 
 - (void)initialize:(CDVInvokedUrlCommand *)command {
-  NSDictionary *options = [command.arguments objectAtIndex:0];
+  NSDictionary *options = BSSyncDictionary(BSSyncArgument(command, 0)) ?: @{};
 
-  NSString *url = options[@"serverUrl"];
-  NSString *tableName = options[@"queueTableName"];
+  NSString *url = BSSyncString(options[@"serverUrl"]);
+  NSString *tableName = BSSyncString(options[@"queueTableName"]) ?: @"";
 
   if (!url || url.length == 0) {
     CDVPluginResult *result = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"serverUrl is required."];
@@ -76,22 +109,19 @@
   self.queueTableName = tableName;
 
   id notifOption = options[@"enableNotifications"];
-  self.enableNotifications = notifOption != nil ? [notifOption boolValue] : YES;
+  self.enableNotifications = [notifOption respondsToSelector:@selector(boolValue)] ? [notifOption boolValue] : YES;
 
   id autoDeleteOption = options[@"autoDeleteCompleted"];
-  self.autoDeleteCompleted = autoDeleteOption != nil ? [autoDeleteOption boolValue] : NO;
+  self.autoDeleteCompleted = [autoDeleteOption respondsToSelector:@selector(boolValue)] ? [autoDeleteOption boolValue] : NO;
 
   id showDebugOption = options[@"showDebugLogs"];
-  self.showDebugLogs = showDebugOption != nil ? [showDebugOption boolValue] : NO;
+  self.showDebugLogs = [showDebugOption respondsToSelector:@selector(boolValue)] ? [showDebugOption boolValue] : NO;
 
   id encryptOption = options[@"encryptDatabase"];
-  self.encryptDatabase = encryptOption != nil ? [encryptOption boolValue] : NO;
+  self.encryptDatabase = [encryptOption respondsToSelector:@selector(boolValue)] ? [encryptOption boolValue] : NO;
 
-  NSDictionary *hdrOption = options[@"headers"];
-  self.headers = [hdrOption isKindOfClass:[NSDictionary class]] ? hdrOption : @{};
-
-  NSDictionary *notifTxtOption = options[@"notificationTexts"];
-  self.notificationTexts = [notifTxtOption isKindOfClass:[NSDictionary class]] ? notifTxtOption : @{};
+  self.headers = BSSyncStringDictionary(options[@"headers"]);
+  self.notificationTexts = BSSyncStringDictionary(options[@"notificationTexts"]);
 
   // Persist settings
   NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
@@ -343,14 +373,11 @@
       return;
     }
 
-    NSString *recordId = record[@"id"];
-    if (!recordId || [recordId isKindOfClass:[NSNull class]] || recordId.length == 0) {
+    NSString *recordId = BSSyncString(record[@"id"]);
+    if (recordId.length == 0) {
       recordId = [[NSUUID UUID] UUIDString];
     }
-    NSString *endpoint = record[@"endpoint"];
-    if (!endpoint || [endpoint isKindOfClass:[NSNull class]]) {
-      endpoint = @"";
-    }
+    NSString *endpoint = BSSyncString(record[@"endpoint"]) ?: @"";
     id payloadObj = record[@"payload"];
     NSString *payload = @"";
     if (payloadObj && ![payloadObj isKindOfClass:[NSNull class]]) {
@@ -361,14 +388,8 @@
         payload = [NSString stringWithFormat:@"%@", payloadObj];
       }
     }
-    NSString *filePath = record[@"filePath"];
-    if (!filePath || [filePath isKindOfClass:[NSNull class]]) {
-      filePath = @"";
-    }
-    NSString *uploadStrategy = record[@"uploadStrategy"];
-    if (!uploadStrategy || [uploadStrategy isKindOfClass:[NSNull class]]) {
-      uploadStrategy = @"REST_PAYLOAD";
-    }
+    NSString *filePath = BSSyncString(record[@"filePath"]) ?: @"";
+    NSString *uploadStrategy = BSSyncString(record[@"uploadStrategy"]) ?: @"REST_PAYLOAD";
 
     const char *insertSQL = "INSERT OR REPLACE INTO sync_queue (Id, Endpoint, Payload, FilePath, UploadStrategy, Status) VALUES (?, ?, ?, ?, ?, 'pending');";
     sqlite3_stmt *stmt;
@@ -471,7 +492,8 @@
 }
 
 - (void)removeRecords:(CDVInvokedUrlCommand *)command {
-  NSArray *ids = [command.arguments objectAtIndex:0];
+  id idsArg = BSSyncArgument(command, 0);
+  NSArray *ids = [idsArg isKindOfClass:[NSArray class]] ? idsArg : @[];
 
   __weak BackgroundSyncPlugin *weakSelf = self;
   [self.commandDelegate runInBackground:^{
@@ -492,8 +514,9 @@
       // setTransactionSuccessful/endTransaction pattern.
       sqlite3_exec(db, "BEGIN TRANSACTION;", NULL, NULL, NULL);
       for (id item in ids) {
-        if (![item isKindOfClass:[NSString class]]) continue;
-        NSString *recordId = (NSString *)item;
+        // Numbers are matched as text, like Android; null and other values are skipped.
+        NSString *recordId = BSSyncString(item);
+        if (!recordId) continue;
         sqlite3_bind_text(stmt, 1, [recordId UTF8String], -1, SQLITE_TRANSIENT);
         sqlite3_step(stmt);
         sqlite3_reset(stmt);
@@ -535,7 +558,7 @@
 }
 
 - (void)enqueueDownload:(CDVInvokedUrlCommand *)command {
-  NSDictionary *record = [command.arguments objectAtIndex:0];
+  NSDictionary *record = BSSyncDictionary(BSSyncArgument(command, 0)) ?: @{};
   
   __weak BackgroundSyncPlugin *weakSelf = self;
   [self.commandDelegate runInBackground:^{
@@ -548,14 +571,11 @@
       return;
     }
 
-    NSString *recordId = record[@"id"];
-    if (!recordId || [recordId isKindOfClass:[NSNull class]] || recordId.length == 0) {
+    NSString *recordId = BSSyncString(record[@"id"]);
+    if (recordId.length == 0) {
       recordId = [[NSUUID UUID] UUIDString];
     }
-    NSString *endpoint = record[@"endpoint"];
-    if (!endpoint || [endpoint isKindOfClass:[NSNull class]]) {
-      endpoint = @"";
-    }
+    NSString *endpoint = BSSyncString(record[@"endpoint"]) ?: @"";
     id payloadObj = record[@"payload"];
     NSString *payload = @"";
     if (payloadObj && ![payloadObj isKindOfClass:[NSNull class]]) {
@@ -566,14 +586,8 @@
         payload = [NSString stringWithFormat:@"%@", payloadObj];
       }
     }
-    NSString *filePath = record[@"filePath"];
-    if (!filePath || [filePath isKindOfClass:[NSNull class]]) {
-      filePath = @"";
-    }
-    NSString *downloadStrategy = record[@"downloadStrategy"];
-    if (!downloadStrategy || [downloadStrategy isKindOfClass:[NSNull class]]) {
-      downloadStrategy = @"REST_PAYLOAD";
-    }
+    NSString *filePath = BSSyncString(record[@"filePath"]) ?: @"";
+    NSString *downloadStrategy = BSSyncString(record[@"downloadStrategy"]) ?: @"REST_PAYLOAD";
 
     NSString *resolvedPath = filePath;
     if (filePath.length > 0) {
@@ -673,11 +687,11 @@
   int limit = -1;
   int offset = 0;
   if (command.arguments.count > 0) {
-    NSDictionary *options = [command.arguments objectAtIndex:0];
-    if ([options isKindOfClass:[NSDictionary class]]) {
-      if (options[@"limit"]) limit = [options[@"limit"] intValue];
-      if (options[@"offset"]) offset = [options[@"offset"] intValue];
-    }
+    NSDictionary *options = BSSyncDictionary(BSSyncArgument(command, 0));
+    NSString *limitValue = BSSyncString(options[@"limit"]);
+    NSString *offsetValue = BSSyncString(options[@"offset"]);
+    if (limitValue) limit = [limitValue intValue];
+    if (offsetValue) offset = MAX(0, [offsetValue intValue]);
   }
   // When autoDeleteCompleted is true, each page is deleted as soon as it's read, so the
   // "next page" is always at offset 0 relative to what remains — a caller-supplied offset > 0
@@ -765,7 +779,8 @@
 }
 
 - (void)removeDownloads:(CDVInvokedUrlCommand *)command {
-  NSArray *ids = [command.arguments objectAtIndex:0];
+  id idsArg = BSSyncArgument(command, 0);
+  NSArray *ids = [idsArg isKindOfClass:[NSArray class]] ? idsArg : @[];
 
   __weak BackgroundSyncPlugin *weakSelf = self;
   [self.commandDelegate runInBackground:^{
@@ -786,8 +801,9 @@
       // setTransactionSuccessful/endTransaction pattern.
       sqlite3_exec(db, "BEGIN TRANSACTION;", NULL, NULL, NULL);
       for (id item in ids) {
-        if (![item isKindOfClass:[NSString class]]) continue;
-        NSString *recordId = (NSString *)item;
+        // Numbers are matched as text, like Android; null and other values are skipped.
+        NSString *recordId = BSSyncString(item);
+        if (!recordId) continue;
         sqlite3_bind_text(stmt, 1, [recordId UTF8String], -1, SQLITE_TRANSIENT);
         sqlite3_step(stmt);
         sqlite3_reset(stmt);
