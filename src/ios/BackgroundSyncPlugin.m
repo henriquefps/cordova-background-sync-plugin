@@ -12,7 +12,56 @@
 // async round-trip into UNUserNotificationCenter just to find out the (already known) answer.
 @property (nonatomic, assign) BOOL notificationAuthorizationChecked;
 @property (nonatomic, assign) BOOL notificationAuthorizationGranted;
+// Sync run bookkeeping. The atomic ones are shared with the sync thread; the others are only
+// touched on the main thread.
+@property (atomic, assign) BOOL rerunRequested;
+@property (atomic, assign) BOOL backgroundTimeExpired;
+@property (nonatomic, assign) UIBackgroundTaskIdentifier syncBgTask;
+@property (nonatomic, assign) BOOL resumeWhenActive;
+@property (nonatomic, assign) NSUInteger retryGeneration;
+@property (nonatomic, assign) NSTimeInterval retryDelay;
+@property (atomic, assign) CFAbsoluteTime lastSilentNotificationAt;
 @end
+
+// How a sync run ended (see -finishSyncRunWithOutcome:).
+static NSString *const BSSyncOutcomeCompleted = @"completed";
+static NSString *const BSSyncOutcomeCancelled = @"cancelled";
+static NSString *const BSSyncOutcomeExpired = @"expired";
+static NSString *const BSSyncOutcomeConnectivity = @"connectivity";
+static NSString *const BSSyncOutcomeError = @"error";
+
+// JS values arrive as NSString, NSNumber, NSNull, NSArray or NSDictionary. These helpers turn
+// what the API documents as text into NSString, so a number (e.g. an id of 123) is stored as
+// "123" the way Android's JSONArray.getString/optString does, and anything else (null, objects,
+// arrays) is treated as absent instead of crashing on a selector NSString-only code relies on.
+static NSString *BSSyncString(id value) {
+  if ([value isKindOfClass:[NSString class]]) return value;
+  if ([value isKindOfClass:[NSNumber class]]) return [value stringValue];
+  return nil;
+}
+
+static NSDictionary *BSSyncDictionary(id value) {
+  return [value isKindOfClass:[NSDictionary class]] ? value : nil;
+}
+
+// Keeps only string keys with string or number values (numbers become text). Header values
+// and notification texts are written to NSUserDefaults and into HTTP headers, and both reject
+// NSNull and other non-property-list values with an exception.
+static NSDictionary *BSSyncStringDictionary(id value) {
+  NSMutableDictionary *out = [NSMutableDictionary dictionary];
+  NSDictionary *dict = BSSyncDictionary(value);
+  for (id key in dict) {
+    NSString *stringValue = BSSyncString(dict[key]);
+    if ([key isKindOfClass:[NSString class]] && stringValue) out[key] = stringValue;
+  }
+  return out;
+}
+
+// Argument `index` of a command, or nil when it is missing or JS passed null.
+static id BSSyncArgument(CDVInvokedUrlCommand *command, NSUInteger index) {
+  id value = command.arguments.count > index ? command.arguments[index] : nil;
+  return [value isKindOfClass:[NSNull class]] ? nil : value;
+}
 
 @implementation BackgroundSyncPlugin
 
@@ -29,11 +78,17 @@
 - (void)pluginInitialize {
   [super pluginInitialize];
 
+  self.syncBgTask = UIBackgroundTaskInvalid;
+  [[NSNotificationCenter defaultCenter] addObserver:self
+                                           selector:@selector(appDidBecomeActive:)
+                                               name:UIApplicationDidBecomeActiveNotification
+                                             object:nil];
+
   NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
   self.serverUrl = [defaults stringForKey:@"BackgroundSyncPlugin_ServerUrl"];
   self.queueTableName = [defaults stringForKey:@"BackgroundSyncPlugin_QueueTableName"];
-  self.headers = [defaults dictionaryForKey:@"BackgroundSyncPlugin_Headers"];
-  self.notificationTexts = [defaults dictionaryForKey:@"BackgroundSyncPlugin_NotificationTexts"];
+  self.headers = BSSyncStringDictionary([defaults dictionaryForKey:@"BackgroundSyncPlugin_Headers"]);
+  self.notificationTexts = BSSyncStringDictionary([defaults dictionaryForKey:@"BackgroundSyncPlugin_NotificationTexts"]);
 
   if ([defaults objectForKey:@"BackgroundSyncPlugin_EnableNotifications"] == nil) {
     self.enableNotifications = YES;
@@ -61,10 +116,10 @@
 }
 
 - (void)initialize:(CDVInvokedUrlCommand *)command {
-  NSDictionary *options = [command.arguments objectAtIndex:0];
+  NSDictionary *options = BSSyncDictionary(BSSyncArgument(command, 0)) ?: @{};
 
-  NSString *url = options[@"serverUrl"];
-  NSString *tableName = options[@"queueTableName"];
+  NSString *url = BSSyncString(options[@"serverUrl"]);
+  NSString *tableName = BSSyncString(options[@"queueTableName"]) ?: @"";
 
   if (!url || url.length == 0) {
     CDVPluginResult *result = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"serverUrl is required."];
@@ -76,22 +131,19 @@
   self.queueTableName = tableName;
 
   id notifOption = options[@"enableNotifications"];
-  self.enableNotifications = notifOption != nil ? [notifOption boolValue] : YES;
+  self.enableNotifications = [notifOption respondsToSelector:@selector(boolValue)] ? [notifOption boolValue] : YES;
 
   id autoDeleteOption = options[@"autoDeleteCompleted"];
-  self.autoDeleteCompleted = autoDeleteOption != nil ? [autoDeleteOption boolValue] : NO;
+  self.autoDeleteCompleted = [autoDeleteOption respondsToSelector:@selector(boolValue)] ? [autoDeleteOption boolValue] : NO;
 
   id showDebugOption = options[@"showDebugLogs"];
-  self.showDebugLogs = showDebugOption != nil ? [showDebugOption boolValue] : NO;
+  self.showDebugLogs = [showDebugOption respondsToSelector:@selector(boolValue)] ? [showDebugOption boolValue] : NO;
 
   id encryptOption = options[@"encryptDatabase"];
-  self.encryptDatabase = encryptOption != nil ? [encryptOption boolValue] : NO;
+  self.encryptDatabase = [encryptOption respondsToSelector:@selector(boolValue)] ? [encryptOption boolValue] : NO;
 
-  NSDictionary *hdrOption = options[@"headers"];
-  self.headers = [hdrOption isKindOfClass:[NSDictionary class]] ? hdrOption : @{};
-
-  NSDictionary *notifTxtOption = options[@"notificationTexts"];
-  self.notificationTexts = [notifTxtOption isKindOfClass:[NSDictionary class]] ? notifTxtOption : @{};
+  self.headers = BSSyncStringDictionary(options[@"headers"]);
+  self.notificationTexts = BSSyncStringDictionary(options[@"notificationTexts"]);
 
   // Persist settings
   NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
@@ -123,7 +175,15 @@
 }
 
 - (void)cancelSync:(CDVInvokedUrlCommand *)command {
+  // Stops the running run at the next record boundary, and drops any pending automatic
+  // retry/resume and any sync() queued behind the run.
   self.isSyncCancelled = YES;
+  self.rerunRequested = NO;
+  dispatch_async(dispatch_get_main_queue(), ^{
+    self.retryGeneration++;
+    self.resumeWhenActive = NO;
+    self.retryDelay = 0;
+  });
   CDVPluginResult *result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"Sync cancellation signal sent."];
   [self.commandDelegate sendPluginResult:result callbackId:command.callbackId];
 }
@@ -143,6 +203,20 @@
 
 // Secure Keychain operations to get or generate the encryption passphrase
 - (NSString *)getOrCreatePassphrase {
+  // Cached for the process: every plugin call opens the database, and a keychain round trip
+  // per open is needless. If storing a new passphrase fails, the next open would otherwise
+  // generate yet another one and fail to read (and so recreate) the database every time.
+  static NSString *cachedPassphrase = nil;
+  static dispatch_once_t once;
+  static NSObject *lock;
+  dispatch_once(&once, ^{ lock = [NSObject new]; });
+  @synchronized (lock) {
+    if (!cachedPassphrase) cachedPassphrase = [self readOrCreateKeychainPassphrase];
+    return cachedPassphrase;
+  }
+}
+
+- (NSString *)readOrCreateKeychainPassphrase {
   NSString *serviceName = @"com.hfps.backgroundsync.passphrase";
   NSString *accountName = @"bgSyncDbKey";
   
@@ -172,7 +246,17 @@
     (__bridge id)kSecAttrAccessible: (__bridge id)kSecAttrAccessibleAfterFirstUnlock
   };
   
-  SecItemAdd((__bridge CFDictionaryRef)attributes, NULL);
+  OSStatus addStatus = SecItemAdd((__bridge CFDictionaryRef)attributes, NULL);
+  if (addStatus == errSecDuplicateItem) {
+    // Another thread stored one first: use that.
+    resultRef = NULL;
+    if (SecItemCopyMatching((__bridge CFDictionaryRef)query, &resultRef) == errSecSuccess) {
+      NSData *resultData = (__bridge_transfer NSData *)resultRef;
+      return [[NSString alloc] initWithData:resultData encoding:NSUTF8StringEncoding];
+    }
+  } else if (addStatus != errSecSuccess) {
+    LogDebug(@"[BG-SYNC-IOS] Could not store the database passphrase in the keychain (OSStatus %d); it lasts until the app exits.", (int)addStatus);
+  }
   return uuid;
 }
 
@@ -204,8 +288,15 @@
     NSLog(@"[BackgroundSyncPlugin] encryptDatabase is not supported in the nocipher build; opening bg_sync.db unencrypted.");
   }
   
-  sqlite3_stmt *stmt;
-  if (sqlite3_prepare_v2(db, "PRAGMA user_version;", -1, &stmt, NULL) != SQLITE_OK) {
+  // Probe that the current key (or no key) can actually read the file. Preparing a PRAGMA
+  // never touches page 1, so it succeeded even when SQLCipher could not decrypt the file and
+  // every later statement then failed with "out of memory" (SQLITE_NOMEM, SQLCipher's codec
+  // error); stepping a read of sqlite_master does read page 1.
+  sqlite3_stmt *stmt = NULL;
+  BOOL readable = sqlite3_prepare_v2(db, "SELECT count(*) FROM sqlite_master;", -1, &stmt, NULL) == SQLITE_OK &&
+                  sqlite3_step(stmt) == SQLITE_ROW;
+  if (stmt) sqlite3_finalize(stmt);
+  if (!readable) {
     sqlite3_close(db);
 
     // Best-effort visibility: this wipes any unsynchronized queued records with no
@@ -224,8 +315,6 @@
       return NULL;
     }
     sqlite3_busy_timeout(db, 5000);
-  } else {
-    sqlite3_finalize(stmt);
   }
   
   char *errMsg = NULL;
@@ -266,13 +355,19 @@
 }
 
 - (void)executeRawQuery:(CDVInvokedUrlCommand *)command {
-  NSString *query = [command.arguments objectAtIndex:0];
-  NSArray *queryArgs = [command.arguments objectAtIndex:1];
+  NSString *query = BSSyncString(BSSyncArgument(command, 0));
+  id argsArg = BSSyncArgument(command, 1);
+  NSArray *queryArgs = [argsArg isKindOfClass:[NSArray class]] ? argsArg : @[];
 
   __weak BackgroundSyncPlugin *weakSelf = self;
   [self.commandDelegate runInBackground:^{
     BackgroundSyncPlugin *strongSelf = weakSelf;
     if (!strongSelf) return;
+
+    if (query.length == 0) {
+      [strongSelf sendErrorResult:@"Database execution error: query is required." command:command];
+      return;
+    }
 
     sqlite3 *db = [strongSelf openWritableDatabase];
     if (!db) {
@@ -281,52 +376,58 @@
     }
 
     sqlite3_stmt *stmt;
-    if (sqlite3_prepare_v2(db, [query UTF8String], -1, &stmt, NULL) == SQLITE_OK) {
-      for (int i = 0; i < queryArgs.count; i++) {
-        id arg = [queryArgs objectAtIndex:i];
-        if ([arg isKindOfClass:[NSNull class]] || arg == nil) {
-          sqlite3_bind_null(stmt, i + 1);
-        } else {
-          NSString *argStr = [NSString stringWithFormat:@"%@", arg];
-          sqlite3_bind_text(stmt, i + 1, [argStr UTF8String], -1, SQLITE_TRANSIENT);
-        }
-      }
-
-      NSString *trimmedQuery = [query stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]].lowercaseString;
-      if ([trimmedQuery hasPrefix:@"select"]) {
-        NSMutableArray *resultList = [NSMutableArray array];
-        while (sqlite3_step(stmt) == SQLITE_ROW) {
-          NSMutableDictionary *row = [NSMutableDictionary dictionary];
-          int columnCount = sqlite3_column_count(stmt);
-          for (int i = 0; i < columnCount; i++) {
-            NSString *colName = [NSString stringWithUTF8String:sqlite3_column_name(stmt, i)];
-            const char *valChar = (char *)sqlite3_column_text(stmt, i);
-            NSString *colVal = valChar ? [NSString stringWithUTF8String:valChar] : @"";
-            row[colName] = colVal;
-          }
-          [resultList addObject:row];
-        }
-        sqlite3_finalize(stmt);
-        sqlite3_close(db);
-        CDVPluginResult *result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsArray:resultList];
-        [strongSelf.commandDelegate sendPluginResult:result callbackId:command.callbackId];
-      } else {
-        sqlite3_step(stmt);
-        sqlite3_finalize(stmt);
-        sqlite3_close(db);
-        CDVPluginResult *result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"Query executed successfully."];
-        [strongSelf.commandDelegate sendPluginResult:result callbackId:command.callbackId];
-      }
-    } else {
-      const char *errMsg = sqlite3_errmsg(db);
+    if (sqlite3_prepare_v2(db, [query UTF8String], -1, &stmt, NULL) != SQLITE_OK) {
+      // Copy the message before sqlite3_close frees it.
+      NSString *message = [NSString stringWithFormat:@"SQL Prepare Error: %s", sqlite3_errmsg(db)];
       sqlite3_close(db);
-      [strongSelf sendErrorResult:[NSString stringWithFormat:@"SQL Prepare Error: %s", errMsg] command:command];
+      [strongSelf sendErrorResult:message command:command];
+      return;
     }
+
+    for (int i = 0; i < (int)queryArgs.count; i++) {
+      id arg = queryArgs[i];
+      NSString *argStr = BSSyncString(arg) ?: ([arg isKindOfClass:[NSNull class]] ? nil : [NSString stringWithFormat:@"%@", arg]);
+      if (argStr) {
+        sqlite3_bind_text(stmt, i + 1, [argStr UTF8String], -1, SQLITE_TRANSIENT);
+      } else {
+        sqlite3_bind_null(stmt, i + 1);
+      }
+    }
+
+    // Any statement that produces columns (SELECT, PRAGMA, WITH ..., RETURNING) returns its
+    // rows, as on Android for SELECT/PRAGMA; everything else returns a confirmation string.
+    // A failing step (constraint violation, read-only table, ...) is reported as an error
+    // instead of being swallowed.
+    int columnCount = sqlite3_column_count(stmt);
+    NSMutableArray *resultList = [NSMutableArray array];
+    int rc;
+    while ((rc = sqlite3_step(stmt)) == SQLITE_ROW) {
+      NSMutableDictionary *row = [NSMutableDictionary dictionary];
+      for (int i = 0; i < columnCount; i++) {
+        NSString *colName = [NSString stringWithUTF8String:sqlite3_column_name(stmt, i)];
+        const char *valChar = (const char *)sqlite3_column_text(stmt, i);
+        row[colName] = valChar ? [NSString stringWithUTF8String:valChar] : @"";
+      }
+      [resultList addObject:row];
+    }
+    NSString *stepError = rc == SQLITE_DONE ? nil : [NSString stringWithFormat:@"Database execution error: %s", sqlite3_errmsg(db)];
+    sqlite3_finalize(stmt);
+    sqlite3_close(db);
+
+    CDVPluginResult *result;
+    if (stepError) {
+      result = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:stepError];
+    } else if (columnCount > 0) {
+      result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsArray:resultList];
+    } else {
+      result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"Query executed successfully."];
+    }
+    [strongSelf.commandDelegate sendPluginResult:result callbackId:command.callbackId];
   }];
 }
 
 - (void)enqueueRecord:(CDVInvokedUrlCommand *)command {
-  NSDictionary *record = [command.arguments objectAtIndex:0];
+  NSDictionary *record = BSSyncDictionary(BSSyncArgument(command, 0)) ?: @{};
   
   __weak BackgroundSyncPlugin *weakSelf = self;
   [self.commandDelegate runInBackground:^{
@@ -339,14 +440,11 @@
       return;
     }
 
-    NSString *recordId = record[@"id"];
-    if (!recordId || [recordId isKindOfClass:[NSNull class]] || recordId.length == 0) {
+    NSString *recordId = BSSyncString(record[@"id"]);
+    if (recordId.length == 0) {
       recordId = [[NSUUID UUID] UUIDString];
     }
-    NSString *endpoint = record[@"endpoint"];
-    if (!endpoint || [endpoint isKindOfClass:[NSNull class]]) {
-      endpoint = @"";
-    }
+    NSString *endpoint = BSSyncString(record[@"endpoint"]) ?: @"";
     id payloadObj = record[@"payload"];
     NSString *payload = @"";
     if (payloadObj && ![payloadObj isKindOfClass:[NSNull class]]) {
@@ -357,14 +455,8 @@
         payload = [NSString stringWithFormat:@"%@", payloadObj];
       }
     }
-    NSString *filePath = record[@"filePath"];
-    if (!filePath || [filePath isKindOfClass:[NSNull class]]) {
-      filePath = @"";
-    }
-    NSString *uploadStrategy = record[@"uploadStrategy"];
-    if (!uploadStrategy || [uploadStrategy isKindOfClass:[NSNull class]]) {
-      uploadStrategy = @"REST_PAYLOAD";
-    }
+    NSString *filePath = BSSyncString(record[@"filePath"]) ?: @"";
+    NSString *uploadStrategy = BSSyncString(record[@"uploadStrategy"]) ?: @"REST_PAYLOAD";
 
     const char *insertSQL = "INSERT OR REPLACE INTO sync_queue (Id, Endpoint, Payload, FilePath, UploadStrategy, Status) VALUES (?, ?, ?, ?, ?, 'pending');";
     sqlite3_stmt *stmt;
@@ -467,7 +559,8 @@
 }
 
 - (void)removeRecords:(CDVInvokedUrlCommand *)command {
-  NSArray *ids = [command.arguments objectAtIndex:0];
+  id idsArg = BSSyncArgument(command, 0);
+  NSArray *ids = [idsArg isKindOfClass:[NSArray class]] ? idsArg : @[];
 
   __weak BackgroundSyncPlugin *weakSelf = self;
   [self.commandDelegate runInBackground:^{
@@ -488,8 +581,9 @@
       // setTransactionSuccessful/endTransaction pattern.
       sqlite3_exec(db, "BEGIN TRANSACTION;", NULL, NULL, NULL);
       for (id item in ids) {
-        if (![item isKindOfClass:[NSString class]]) continue;
-        NSString *recordId = (NSString *)item;
+        // Numbers are matched as text, like Android; null and other values are skipped.
+        NSString *recordId = BSSyncString(item);
+        if (!recordId) continue;
         sqlite3_bind_text(stmt, 1, [recordId UTF8String], -1, SQLITE_TRANSIENT);
         sqlite3_step(stmt);
         sqlite3_reset(stmt);
@@ -531,7 +625,7 @@
 }
 
 - (void)enqueueDownload:(CDVInvokedUrlCommand *)command {
-  NSDictionary *record = [command.arguments objectAtIndex:0];
+  NSDictionary *record = BSSyncDictionary(BSSyncArgument(command, 0)) ?: @{};
   
   __weak BackgroundSyncPlugin *weakSelf = self;
   [self.commandDelegate runInBackground:^{
@@ -544,14 +638,11 @@
       return;
     }
 
-    NSString *recordId = record[@"id"];
-    if (!recordId || [recordId isKindOfClass:[NSNull class]] || recordId.length == 0) {
+    NSString *recordId = BSSyncString(record[@"id"]);
+    if (recordId.length == 0) {
       recordId = [[NSUUID UUID] UUIDString];
     }
-    NSString *endpoint = record[@"endpoint"];
-    if (!endpoint || [endpoint isKindOfClass:[NSNull class]]) {
-      endpoint = @"";
-    }
+    NSString *endpoint = BSSyncString(record[@"endpoint"]) ?: @"";
     id payloadObj = record[@"payload"];
     NSString *payload = @"";
     if (payloadObj && ![payloadObj isKindOfClass:[NSNull class]]) {
@@ -562,14 +653,8 @@
         payload = [NSString stringWithFormat:@"%@", payloadObj];
       }
     }
-    NSString *filePath = record[@"filePath"];
-    if (!filePath || [filePath isKindOfClass:[NSNull class]]) {
-      filePath = @"";
-    }
-    NSString *downloadStrategy = record[@"downloadStrategy"];
-    if (!downloadStrategy || [downloadStrategy isKindOfClass:[NSNull class]]) {
-      downloadStrategy = @"REST_PAYLOAD";
-    }
+    NSString *filePath = BSSyncString(record[@"filePath"]) ?: @"";
+    NSString *downloadStrategy = BSSyncString(record[@"downloadStrategy"]) ?: @"REST_PAYLOAD";
 
     NSString *resolvedPath = filePath;
     if (filePath.length > 0) {
@@ -669,11 +754,11 @@
   int limit = -1;
   int offset = 0;
   if (command.arguments.count > 0) {
-    NSDictionary *options = [command.arguments objectAtIndex:0];
-    if ([options isKindOfClass:[NSDictionary class]]) {
-      if (options[@"limit"]) limit = [options[@"limit"] intValue];
-      if (options[@"offset"]) offset = [options[@"offset"] intValue];
-    }
+    NSDictionary *options = BSSyncDictionary(BSSyncArgument(command, 0));
+    NSString *limitValue = BSSyncString(options[@"limit"]);
+    NSString *offsetValue = BSSyncString(options[@"offset"]);
+    if (limitValue) limit = [limitValue intValue];
+    if (offsetValue) offset = MAX(0, [offsetValue intValue]);
   }
   // When autoDeleteCompleted is true, each page is deleted as soon as it's read, so the
   // "next page" is always at offset 0 relative to what remains — a caller-supplied offset > 0
@@ -761,7 +846,8 @@
 }
 
 - (void)removeDownloads:(CDVInvokedUrlCommand *)command {
-  NSArray *ids = [command.arguments objectAtIndex:0];
+  id idsArg = BSSyncArgument(command, 0);
+  NSArray *ids = [idsArg isKindOfClass:[NSArray class]] ? idsArg : @[];
 
   __weak BackgroundSyncPlugin *weakSelf = self;
   [self.commandDelegate runInBackground:^{
@@ -782,8 +868,9 @@
       // setTransactionSuccessful/endTransaction pattern.
       sqlite3_exec(db, "BEGIN TRANSACTION;", NULL, NULL, NULL);
       for (id item in ids) {
-        if (![item isKindOfClass:[NSString class]]) continue;
-        NSString *recordId = (NSString *)item;
+        // Numbers are matched as text, like Android; null and other values are skipped.
+        NSString *recordId = BSSyncString(item);
+        if (!recordId) continue;
         sqlite3_bind_text(stmt, 1, [recordId UTF8String], -1, SQLITE_TRANSIENT);
         sqlite3_step(stmt);
         sqlite3_reset(stmt);
@@ -848,74 +935,222 @@
     return;
   }
 
+  // Ack the JS call as soon as the native run has been scheduled — this mirrors Android,
+  // where enqueueSync() resolves the moment WorkManager accepts the task rather than waiting
+  // for the whole upload+download cycle to finish. From here on, progress/completion/failure
+  // is reported exclusively through the registered progress listener
+  // (onStarted/onProgress/onCompleted/onFailed), on both platforms.
+  __weak BackgroundSyncPlugin *weakSelf = self;
+  dispatch_async(dispatch_get_main_queue(), ^{
+    NSString *message = [weakSelf startSyncRun] ?: @"Background sync task scheduled successfully.";
+    CDVPluginResult *ackResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:message];
+    [weakSelf.commandDelegate sendPluginResult:ackResult callbackId:command.callbackId];
+  });
+}
+
+// Main thread only. Starts a run, or, when one is already running, asks it to pick up the
+// records queued since it started instead of cancelling it (which used to report a
+// "Synchronization cancelled by user" failure the user never asked for, once per extra call).
+- (NSString *)startSyncRun {
+  self.retryGeneration++;  // a start supersedes any scheduled automatic retry
+  self.resumeWhenActive = NO;
+
   if (self.isSyncRunning) {
-    LogDebug(@"[BG-SYNC-IOS] Sync already running. Cancelling current and scheduling retry...");
-    self.isSyncCancelled = YES;
-    __weak BackgroundSyncPlugin *weakSelf = self;
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-        [weakSelf enqueueSync:command];
-    });
-    return;
+    self.rerunRequested = YES;
+    LogDebug(@"[BG-SYNC-IOS] Sync already running; records queued since it started join this run.");
+    return @"Sync already running; records queued since it started are included in this run.";
   }
 
   self.isSyncCancelled = NO;
+  self.backgroundTimeExpired = NO;
+  self.rerunRequested = NO;
   self.isSyncRunning = YES;
 
   __weak BackgroundSyncPlugin *weakSelf = self;
   UIApplication *application = [UIApplication sharedApplication];
-  __block UIBackgroundTaskIdentifier bgTask = [application beginBackgroundTaskWithName:@"BackgroundSyncPluginTask" expirationHandler:^{
+  self.syncBgTask = [application beginBackgroundTaskWithName:@"BackgroundSyncPluginTask" expirationHandler:^{
+      // iOS grants about 30 s after the app leaves the foreground. Stop at the next record
+      // boundary and give the time back now; the run is marked for an automatic resume when
+      // the app is active again. isSyncRunning stays YES until the loop has really stopped,
+      // so a sync() call meanwhile cannot start a second, concurrent run.
       BackgroundSyncPlugin *strongSelf = weakSelf;
-      if (strongSelf) {
-        if (strongSelf.enableNotifications) {
-          NSString *title = strongSelf.notificationTexts[@"failureTitle"] ?: @"Sync Suspended";
-          NSString *bodyPattern = strongSelf.notificationTexts[@"failureBody"] ?: @"Sync paused: {error}. Will resume automatically.";
-          NSString *body = [bodyPattern stringByReplacingOccurrencesOfString:@"{error}" withString:@"Background execution limit reached"];
-          [strongSelf sendLocalNotificationWithTitle:title body:body isSilent:NO];
-        }
-        [strongSelf broadcastEvent:@"failed" percentage:0 completed:0 total:0 error:@"iOS background execution time expired"];
-        strongSelf.isSyncRunning = NO;
+      if (!strongSelf) return;
+      strongSelf.backgroundTimeExpired = YES;
+      strongSelf.isSyncCancelled = YES;
+      if (strongSelf.enableNotifications) {
+        NSString *title = strongSelf.notificationTexts[@"failureTitle"] ?: @"Sync Suspended";
+        NSString *bodyPattern = strongSelf.notificationTexts[@"failureBody"] ?: @"Sync paused: {error}. Will resume automatically.";
+        NSString *body = [bodyPattern stringByReplacingOccurrencesOfString:@"{error}" withString:@"Background execution limit reached"];
+        [strongSelf sendLocalNotificationWithTitle:title body:body isSilent:NO];
       }
-
-      if (bgTask != UIBackgroundTaskInvalid) {
-        [application endBackgroundTask:bgTask];
-        bgTask = UIBackgroundTaskInvalid;
-      }
+      [strongSelf endSyncBackgroundTask];
   }];
-
-  // Ack the JS call as soon as the native background task has been scheduled — this
-  // mirrors Android, where enqueueSync() resolves the moment WorkManager accepts the
-  // task rather than waiting for the whole upload+download cycle to finish. From here
-  // on, progress/completion/failure is reported exclusively through the registered
-  // progress listener (onStarted/onProgress/onCompleted/onFailed), on both platforms.
-  CDVPluginResult *ackResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"Background sync task scheduled successfully."];
-  [self.commandDelegate sendPluginResult:ackResult callbackId:command.callbackId];
 
   dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.0 * NSEC_PER_SEC)), dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
       BackgroundSyncPlugin *strongSelf = weakSelf;
-      if (!strongSelf) {
-        if (bgTask != UIBackgroundTaskInvalid) {
-          [application endBackgroundTask:bgTask];
-          bgTask = UIBackgroundTaskInvalid;
-        }
-        return;
-      }
-      [strongSelf processSyncQueueWithBgTask:bgTask];
+      if (!strongSelf) return;
+      NSString *outcome = [strongSelf processSyncQueues];
+      dispatch_async(dispatch_get_main_queue(), ^{
+        [weakSelf finishSyncRunWithOutcome:outcome];
+      });
   });
+  return nil;
 }
 
-- (void)processSyncQueueWithBgTask:(UIBackgroundTaskIdentifier)bgTask {
-  LogDebug(@"[BG-SYNC-IOS] processSyncQueueWithBgTask execution started.");
+// Main thread only.
+- (void)endSyncBackgroundTask {
+  if (self.syncBgTask != UIBackgroundTaskInvalid) {
+    [[UIApplication sharedApplication] endBackgroundTask:self.syncBgTask];
+    self.syncBgTask = UIBackgroundTaskInvalid;
+  }
+}
+
+// Main thread only. Decides what happens after a run stops.
+- (void)finishSyncRunWithOutcome:(NSString *)outcome {
+  self.isSyncRunning = NO;
+  [self endSyncBackgroundTask];
+  BOOL rerun = self.rerunRequested;
+  self.rerunRequested = NO;
+
+  if ([outcome isEqualToString:BSSyncOutcomeCompleted]) {
+    self.retryDelay = 0;
+  } else if ([outcome isEqualToString:BSSyncOutcomeExpired]) {
+    // Nothing is lost: the remaining rows are still pending/failed. Continue as soon as the
+    // app is in the foreground again.
+    self.resumeWhenActive = YES;
+  } else if ([outcome isEqualToString:BSSyncOutcomeConnectivity]) {
+    // Android hands this case to WorkManager's retry with backoff. Do the same while the
+    // process is alive: retry after 10 s, doubling up to 5 min, and immediately when the app
+    // comes back to the foreground (the WebView's "online" event also calls sync()).
+    self.retryDelay = self.retryDelay > 0 ? MIN(self.retryDelay * 2, 300) : 10;
+    self.resumeWhenActive = YES;
+    NSUInteger generation = ++self.retryGeneration;
+    LogDebug(@"[BG-SYNC-IOS] Connectivity failure; retrying in %.0f s.", self.retryDelay);
+    __weak BackgroundSyncPlugin *weakSelf = self;
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(self.retryDelay * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        BackgroundSyncPlugin *strongSelf = weakSelf;
+        if (!strongSelf || strongSelf.retryGeneration != generation || strongSelf.isSyncRunning) return;
+        [strongSelf startSyncRun];
+    });
+  }
+
+  if (rerun) {
+    // sync() was called after this run's last look at the queue (or before a cancel/expiry
+    // took effect): honour it now.
+    [self startSyncRun];
+  } else if (self.resumeWhenActive && [UIApplication sharedApplication].applicationState == UIApplicationStateActive &&
+             [outcome isEqualToString:BSSyncOutcomeExpired]) {
+    [self startSyncRun];
+  }
+}
+
+- (void)appDidBecomeActive:(NSNotification *)notification {
+  if (self.resumeWhenActive && !self.isSyncRunning && self.serverUrl.length > 0) {
+    LogDebug(@"[BG-SYNC-IOS] App active again; resuming the interrupted sync.");
+    [self startSyncRun];
+  }
+}
+
+// Pending/failed rows of a queue, in queue order, minus the ids this run already took.
+- (NSArray<NSDictionary *> *)pendingRowsInTable:(NSString *)table strategyColumn:(NSString *)strategyColumn db:(sqlite3 *)db excluding:(NSSet<NSString *> *)taken {
+  NSMutableArray *rows = [NSMutableArray array];
+  NSString *sql = [NSString stringWithFormat:@"SELECT Id, Endpoint, FilePath, %@ FROM %@ WHERE LOWER(Status) = 'pending' OR LOWER(Status) = 'failed' ORDER BY Sequence ASC;", strategyColumn, table];
+  sqlite3_stmt *stmt;
+  if (sqlite3_prepare_v2(db, [sql UTF8String], -1, &stmt, NULL) == SQLITE_OK) {
+    while (sqlite3_step(stmt) == SQLITE_ROW) {
+      const char *idChar = (const char *)sqlite3_column_text(stmt, 0);
+      if (!idChar) {
+        LogDebug(@"[BG-SYNC-IOS] Skipping %@ row with NULL Id.", table);
+        continue;
+      }
+      NSString *recordId = [NSString stringWithUTF8String:idChar];
+      if ([taken containsObject:recordId]) continue;
+      const char *endpointChar = (const char *)sqlite3_column_text(stmt, 1);
+      const char *filePathChar = (const char *)sqlite3_column_text(stmt, 2);
+      const char *strategyChar = (const char *)sqlite3_column_text(stmt, 3);
+      [rows addObject:@{
+        @"Id" : recordId,
+        @"Endpoint" : endpointChar ? [NSString stringWithUTF8String:endpointChar] : @"",
+        @"FilePath" : filePathChar ? [NSString stringWithUTF8String:filePathChar] : [NSNull null],
+        @"Strategy" : strategyChar ? [NSString stringWithUTF8String:strategyChar] : @"REST_PAYLOAD"
+      }];
+    }
+    sqlite3_finalize(stmt);
+  } else {
+    LogDebug(@"[BG-SYNC-IOS] ERROR: Failed to read %@: %s", table, sqlite3_errmsg(db));
+  }
+  return rows;
+}
+
+// Re-reads one row right before it is sent. Returns nil when the row was removed (removeRecords,
+// clearQueue, the inspector) or already completed since the run listed it, so it is skipped
+// instead of being sent with an empty payload. A row re-enqueued under the same id is sent
+// with its latest values.
+- (NSDictionary *)currentRowInTable:(NSString *)table strategyColumn:(NSString *)strategyColumn recordId:(NSString *)recordId db:(sqlite3 *)db {
+  NSString *sql = [NSString stringWithFormat:@"SELECT Payload, Endpoint, FilePath, %@, Status FROM %@ WHERE Id = ?;", strategyColumn, table];
+  NSDictionary *row = nil;
+  sqlite3_stmt *stmt;
+  if (sqlite3_prepare_v2(db, [sql UTF8String], -1, &stmt, NULL) == SQLITE_OK) {
+    sqlite3_bind_text(stmt, 1, [recordId UTF8String], -1, SQLITE_TRANSIENT);
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+      const char *statusChar = (const char *)sqlite3_column_text(stmt, 4);
+      NSString *status = statusChar ? [[NSString stringWithUTF8String:statusChar] lowercaseString] : @"";
+      if ([status isEqualToString:@"pending"] || [status isEqualToString:@"failed"]) {
+        const char *payloadChar = (const char *)sqlite3_column_text(stmt, 0);
+        const char *endpointChar = (const char *)sqlite3_column_text(stmt, 1);
+        const char *filePathChar = (const char *)sqlite3_column_text(stmt, 2);
+        const char *strategyChar = (const char *)sqlite3_column_text(stmt, 3);
+        row = @{
+          @"Payload" : payloadChar ? [NSString stringWithUTF8String:payloadChar] : @"",
+          @"Endpoint" : endpointChar ? [NSString stringWithUTF8String:endpointChar] : @"",
+          @"FilePath" : filePathChar ? [NSString stringWithUTF8String:filePathChar] : @"",
+          @"Strategy" : strategyChar ? [NSString stringWithUTF8String:strategyChar] : @"REST_PAYLOAD"
+        };
+      }
+    }
+    sqlite3_finalize(stmt);
+  }
+  return row;
+}
+
+- (void)setStatus:(NSString *)status error:(NSString *)error responseData:(NSString *)responseData table:(NSString *)table recordId:(NSString *)recordId db:(sqlite3 *)db {
+  NSString *sql;
+  if (responseData) {
+    sql = [NSString stringWithFormat:@"UPDATE %@ SET Status = ?, Error = ?, ResponseData = ? WHERE Id = ?;", table];
+  } else {
+    sql = [NSString stringWithFormat:@"UPDATE %@ SET Status = ?, Error = ? WHERE Id = ?;", table];
+  }
+  sqlite3_stmt *stmt;
+  if (sqlite3_prepare_v2(db, [sql UTF8String], -1, &stmt, NULL) == SQLITE_OK) {
+    int i = 1;
+    sqlite3_bind_text(stmt, i++, [status UTF8String], -1, SQLITE_TRANSIENT);
+    if (error) sqlite3_bind_text(stmt, i++, [error UTF8String], -1, SQLITE_TRANSIENT); else sqlite3_bind_null(stmt, i++);
+    if (responseData) sqlite3_bind_text(stmt, i++, [responseData UTF8String], -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, i, [recordId UTF8String], -1, SQLITE_TRANSIENT);
+    sqlite3_step(stmt);
+    sqlite3_finalize(stmt);
+  }
+}
+
+- (NSString *)stopOutcomeForCancellation {
+  return self.backgroundTimeExpired ? BSSyncOutcomeExpired : BSSyncOutcomeCancelled;
+}
+
+- (NSString *)stopMessageForCancellation {
+  return self.backgroundTimeExpired ? @"iOS background execution time expired" : @"Synchronization cancelled by user";
+}
+
+// Runs on a background queue. Drains sync_queue, then download_queue, and returns one of the
+// BSSyncOutcome values. When sync() is called during the run, rows queued since the run
+// started are picked up before it ends (one onStarted/onCompleted pair per run).
+- (NSString *)processSyncQueues {
+  LogDebug(@"[BG-SYNC-IOS] processSyncQueues execution started.");
 
   sqlite3 *db = [self openWritableDatabase];
   if (!db) {
     LogDebug(@"[BG-SYNC-IOS] ERROR: Failed to open SQLite database.");
-    self.isSyncRunning = NO;
     [self broadcastEvent:@"failed" percentage:0 completed:0 total:0 error:@"Failed to open SQLite database."];
-    if (bgTask != UIBackgroundTaskInvalid) {
-      [[UIApplication sharedApplication] endBackgroundTask:bgTask];
-      bgTask = UIBackgroundTaskInvalid;
-    }
-    return;
+    return BSSyncOutcomeError;
   }
 
   if (self.enableNotifications) {
@@ -924,320 +1159,62 @@
     [self sendLocalNotificationWithTitle:title body:body isSilent:YES];
   }
 
-  NSMutableArray *pendingItems = [NSMutableArray array];
-  const char *query = "SELECT Id, Endpoint, FilePath, UploadStrategy FROM sync_queue WHERE LOWER(Status) = 'pending' OR LOWER(Status) = 'failed' ORDER BY Sequence ASC;";
-  sqlite3_stmt *stmt;
+  NSMutableSet<NSString *> *takenUploads = [NSMutableSet set];
+  NSMutableSet<NSString *> *takenDownloads = [NSMutableSet set];
+  int totalCount = 0, completedCount = 0;
+  int totalDownloadCount = 0, completedDownloadCount = 0;
+  BOOL firstPass = YES, uploadsStarted = NO, downloadsStarted = NO;
+  NSString *outcome = nil;
 
-  if (sqlite3_prepare_v2(db, query, -1, &stmt, NULL) == SQLITE_OK) {
-    while (sqlite3_step(stmt) == SQLITE_ROW) {
-      const char *idChar = (char *)sqlite3_column_text(stmt, 0);
-      const char *endpointChar = (char *)sqlite3_column_text(stmt, 1);
-      if (!idChar) {
-        LogDebug(@"[BG-SYNC-IOS] Skipping sync_queue row with NULL Id.");
-        continue;
-      }
-      NSString *recordId = [NSString stringWithUTF8String:idChar];
-      NSString *endpoint = endpointChar ? [NSString stringWithUTF8String:endpointChar] : @"";
-
-      const char *filePathChar = (char *)sqlite3_column_text(stmt, 2);
-      NSString *filePath = filePathChar ? [NSString stringWithUTF8String:filePathChar] : nil;
-
-      const char *strategyChar = (char *)sqlite3_column_text(stmt, 3);
-      NSString *uploadStrategy = strategyChar ? [NSString stringWithUTF8String:strategyChar] : @"REST_PAYLOAD";
-
-      [pendingItems addObject:@{
-        @"Id" : recordId,
-        @"Endpoint" : endpoint,
-        @"FilePath" : filePath ?: [NSNull null],
-        @"UploadStrategy" : uploadStrategy
-      }];
-    }
-    sqlite3_finalize(stmt);
-  } else {
-    const char *errMsg = sqlite3_errmsg(db);
-    LogDebug(@"[BG-SYNC-IOS] ERROR: Failed to prepare query statement: %s", errMsg);
-  }
-
-  NSMutableArray *pendingDownloads = [NSMutableArray array];
-  const char *downloadQuery = "SELECT Id, Endpoint, FilePath, DownloadStrategy FROM download_queue WHERE LOWER(Status) = 'pending' OR LOWER(Status) = 'failed' ORDER BY Sequence ASC;";
-  sqlite3_stmt *downloadStmt;
-  if (sqlite3_prepare_v2(db, downloadQuery, -1, &downloadStmt, NULL) == SQLITE_OK) {
-    while (sqlite3_step(downloadStmt) == SQLITE_ROW) {
-      const char *idChar = (char *)sqlite3_column_text(downloadStmt, 0);
-      const char *endpointChar = (char *)sqlite3_column_text(downloadStmt, 1);
-      if (!idChar) {
-        LogDebug(@"[BG-SYNC-IOS] Skipping download_queue row with NULL Id.");
-        continue;
-      }
-      NSString *recordId = [NSString stringWithUTF8String:idChar];
-      NSString *endpoint = endpointChar ? [NSString stringWithUTF8String:endpointChar] : @"";
-
-      const char *filePathChar = (char *)sqlite3_column_text(downloadStmt, 2);
-      NSString *filePath = filePathChar ? [NSString stringWithUTF8String:filePathChar] : nil;
-
-      const char *strategyChar = (char *)sqlite3_column_text(downloadStmt, 3);
-      NSString *downloadStrategy = strategyChar ? [NSString stringWithUTF8String:strategyChar] : @"REST_PAYLOAD";
-
-      [pendingDownloads addObject:@{
-        @"Id" : recordId,
-        @"Endpoint" : endpoint,
-        @"FilePath" : filePath ?: [NSNull null],
-        @"DownloadStrategy" : downloadStrategy
-      }];
-    }
-    sqlite3_finalize(downloadStmt);
-  } else {
-    const char *errMsg = sqlite3_errmsg(db);
-    LogDebug(@"[BG-SYNC-IOS] ERROR: Failed to prepare download query statement: %s", errMsg);
-  }
-
-  // Note: `db` is intentionally kept open for the remainder of this method — reused for
-  // per-record payload reads and status writes below — instead of being reopened per record,
-  // which was needlessly re-running table-creation/key-derivation work on every open.
-
-  int totalCount = (int)pendingItems.count;
-  int totalDownloadCount = (int)pendingDownloads.count;
-
-  if (totalCount == 0 && totalDownloadCount == 0) {
-    if (self.enableNotifications) {
-      [self sendLocalNotificationWithTitle:self.notificationTexts[@"successTitle"] ?: @"Synchronization Complete"
-                                      body:self.notificationTexts[@"successBody"] ?: @"All offline records successfully uploaded."
-                                  isSilent:NO];
-    }
-    [self broadcastEvent:@"completed" percentage:100 completed:0 total:0 error:nil];
-    self.isSyncRunning = NO;
-    sqlite3_close(db);
-    if (bgTask != UIBackgroundTaskInvalid) {
-      [[UIApplication sharedApplication] endBackgroundTask:bgTask];
-      bgTask = UIBackgroundTaskInvalid;
-    }
-    return;
-  }
-
-  int completedCount = 0;
-  BOOL syncAborted = NO;
-
-  if (totalCount > 0) {
-    [self broadcastEvent:@"started" percentage:0 completed:0 total:totalCount error:nil];
-  for (NSDictionary *item in pendingItems) {
-    if (self.isSyncCancelled) {
-      [self broadcastEvent:@"failed" percentage:(int)(((float)completedCount / (float)totalCount) * 100) completed:completedCount total:totalCount error:@"Synchronization cancelled by user"];
-      syncAborted = YES;
-      break;
-    }
-    NSString *recordId = item[@"Id"];
-    NSString *endpoint = item[@"Endpoint"];
-    id filePathObj = item[@"FilePath"];
-    NSString *filePath = [filePathObj isKindOfClass:[NSNull class]] ? nil : filePathObj;
-    NSString *strategy = item[@"UploadStrategy"];
-
-    NSString *payload = @"";
-    sqlite3_stmt *payloadStmt;
-    const char *payloadQuery = "SELECT Payload FROM sync_queue WHERE Id = ?;";
-    if (sqlite3_prepare_v2(db, payloadQuery, -1, &payloadStmt, NULL) == SQLITE_OK) {
-      sqlite3_bind_text(payloadStmt, 1, [recordId UTF8String], -1, SQLITE_TRANSIENT);
-      if (sqlite3_step(payloadStmt) == SQLITE_ROW) {
-        const char *payloadChar = (char *)sqlite3_column_text(payloadStmt, 0);
-        if (payloadChar) {
-          payload = [NSString stringWithUTF8String:payloadChar];
-        }
-      }
-      sqlite3_finalize(payloadStmt);
-    }
-
-    NSString *uploadError = nil;
-    if ([strategy caseInsensitiveCompare:@"PRESIGNED_URL"] == NSOrderedSame) {
-      uploadError = [self uploadItemViaPresignedUrlWithPayload:payload endpoint:endpoint filePath:filePath];
-    } else {
-      uploadError = [self uploadItemWithPayload:payload endpoint:endpoint filePath:filePath];
-    }
-    BOOL success = (uploadError == nil);
-
-    int percentage = (int)(((float)(completedCount + 1) / (float)totalCount) * 100);
-
-    if (success) {
-      completedCount++;
-      if (self.autoDeleteCompleted) {
-        sqlite3_stmt *delStmt;
-        if (sqlite3_prepare_v2(db, "DELETE FROM sync_queue WHERE Id = ?;", -1, &delStmt, NULL) == SQLITE_OK) {
-          sqlite3_bind_text(delStmt, 1, [recordId UTF8String], -1, SQLITE_TRANSIENT);
-          sqlite3_step(delStmt);
-          sqlite3_finalize(delStmt);
-        }
-      } else {
-        sqlite3_stmt *updStmt;
-        if (sqlite3_prepare_v2(db, "UPDATE sync_queue SET Status = 'completed', Error = NULL WHERE Id = ?;", -1, &updStmt, NULL) == SQLITE_OK) {
-          sqlite3_bind_text(updStmt, 1, [recordId UTF8String], -1, SQLITE_TRANSIENT);
-          sqlite3_step(updStmt);
-          sqlite3_finalize(updStmt);
-        }
-      }
-
-      [self broadcastEvent:@"progress" percentage:percentage completed:completedCount total:totalCount error:nil];
-
-      if (self.enableNotifications) {
-        NSString *title = self.notificationTexts[@"progressTitle"] ?: @"Syncing in Background";
-        NSString *bodyPattern = self.notificationTexts[@"progressBody"] ?: @"Synchronizing: {current} of {total} records ({percentage}%)";
-        NSString *body = [bodyPattern stringByReplacingOccurrencesOfString:@"{current}" withString:[NSString stringWithFormat:@"%d", completedCount]];
-        body = [body stringByReplacingOccurrencesOfString:@"{total}" withString:[NSString stringWithFormat:@"%d", totalCount]];
-        body = [body stringByReplacingOccurrencesOfString:@"{percentage}" withString:[NSString stringWithFormat:@"%d", percentage]];
-        [self sendLocalNotificationWithTitle:title body:body isSilent:YES];
-      }
-    } else {
-      NSString *errorMessage = uploadError ?: @"Network upload error";
-      sqlite3_stmt *updStmt;
-      if (sqlite3_prepare_v2(db, "UPDATE sync_queue SET Status = 'failed', Error = ? WHERE Id = ?;", -1, &updStmt, NULL) == SQLITE_OK) {
-        sqlite3_bind_text(updStmt, 1, [errorMessage UTF8String], -1, SQLITE_TRANSIENT);
-        sqlite3_bind_text(updStmt, 2, [recordId UTF8String], -1, SQLITE_TRANSIENT);
-        sqlite3_step(updStmt);
-        sqlite3_finalize(updStmt);
-      }
-
-      if (self.enableNotifications) {
-        NSString *title = self.notificationTexts[@"failureTitle"] ?: @"Sync Suspended";
-        NSString *bodyPattern = self.notificationTexts[@"failureBody"] ?: @"Sync paused: {error}. Will resume automatically.";
-        NSString *body = [bodyPattern stringByReplacingOccurrencesOfString:@"{error}" withString:errorMessage];
-        [self sendLocalNotificationWithTitle:title body:body isSilent:NO];
-      }
-      [self broadcastEvent:@"failed" percentage:percentage completed:completedCount total:totalCount error:errorMessage];
-
-      // Only a genuine connectivity failure (the request never reached the server) should
-      // abort the whole run. An HTTP error response means the server was reached and
-      // rejected this specific record — it's already marked "failed" above; let the loop
-      // continue so unrelated queued items still get attempted.
-      BOOL isConnectivityFailure = [errorMessage hasPrefix:@"Upload Exception:"] ||
-          [errorMessage hasPrefix:@"Handshake exception:"] ||
-          [errorMessage hasPrefix:@"Cloud upload Exception:"];
-      if (isConnectivityFailure) {
-        syncAborted = YES;
-      }
-    }
-
-    if (syncAborted) {
-      break;
-    }
-  }
-
-  }
-
-  if (syncAborted) {
-    self.isSyncRunning = NO;
-    sqlite3_close(db);
-    if (bgTask != UIBackgroundTaskInvalid) {
-      [[UIApplication sharedApplication] endBackgroundTask:bgTask];
-      bgTask = UIBackgroundTaskInvalid;
-    }
-    return;
-  }
-
-  // ----------------- DOWNLOAD PROCESS -----------------
-  int completedDownloadCount = 0;
-  BOOL downloadAborted = NO;
-
-  if (totalDownloadCount > 0) {
-    [self broadcastEvent:@"started_download" percentage:0 completed:0 total:totalDownloadCount error:nil];
-
-    for (NSDictionary *item in pendingDownloads) {
-      if (self.isSyncCancelled) {
-        [self broadcastEvent:@"failed" percentage:(int)(((float)completedDownloadCount / (float)totalDownloadCount) * 100) completed:completedCount + completedDownloadCount total:totalCount + totalDownloadCount error:@"Synchronization cancelled by user"];
-        downloadAborted = YES;
-        break;
-      }
-
-      NSString *recordId = item[@"Id"];
-      NSString *endpoint = item[@"Endpoint"];
-      id filePathObj = item[@"FilePath"];
-      NSString *filePath = [filePathObj isKindOfClass:[NSNull class]] ? nil : filePathObj;
-      NSString *strategy = item[@"DownloadStrategy"];
-
-      NSString *payload = @"";
-      sqlite3_stmt *payloadStmt;
-      const char *payloadQuery = "SELECT Payload FROM download_queue WHERE Id = ?;";
-      if (sqlite3_prepare_v2(db, payloadQuery, -1, &payloadStmt, NULL) == SQLITE_OK) {
-        sqlite3_bind_text(payloadStmt, 1, [recordId UTF8String], -1, SQLITE_TRANSIENT);
-        if (sqlite3_step(payloadStmt) == SQLITE_ROW) {
-          const char *payloadChar = (char *)sqlite3_column_text(payloadStmt, 0);
-          if (payloadChar) {
-            payload = [NSString stringWithUTF8String:payloadChar];
-          }
-        }
-        sqlite3_finalize(payloadStmt);
-      }
-
-      int percentage = (int)(((float)(completedDownloadCount + 1) / (float)totalDownloadCount) * 100);
-
-      [self broadcastEvent:@"progress_download" percentage:percentage completed:completedDownloadCount + 1 total:totalDownloadCount error:nil];
-
-      if (self.enableNotifications) {
-        NSString *title = self.notificationTexts[@"downloadProgressTitle"] ?: @"Background Download Active";
-        NSString *bodyPattern = self.notificationTexts[@"downloadProgressBody"] ?: @"Downloading: {current} of {total} files ({percentage}%)";
-        NSString *body = [bodyPattern stringByReplacingOccurrencesOfString:@"{current}" withString:[NSString stringWithFormat:@"%d", completedDownloadCount + 1]];
-        body = [body stringByReplacingOccurrencesOfString:@"{total}" withString:[NSString stringWithFormat:@"%d", totalDownloadCount]];
-        body = [body stringByReplacingOccurrencesOfString:@"{percentage}" withString:[NSString stringWithFormat:@"%d", percentage]];
-        [self sendLocalNotificationWithTitle:title body:body isSilent:YES];
-      }
-
-      NSString *downloadError = nil;
-      NSString *responseData = nil;
-
-      if ([strategy caseInsensitiveCompare:@"BINARY_FILE"] == NSOrderedSame) {
-        downloadError = [self performBinaryFileDownloadWithUrl:endpoint filePath:filePath];
-      } else {
-        downloadError = [self performDownloadWithEndpoint:endpoint payload:payload responseData:&responseData];
-      }
-
-      if (downloadError == NULL) {
-        completedDownloadCount++;
-        sqlite3_stmt *updStmt;
-        const char *updateSQL = "UPDATE download_queue SET Status = 'completed', ResponseData = ?, Error = NULL WHERE Id = ?;";
-        if (sqlite3_prepare_v2(db, updateSQL, -1, &updStmt, NULL) == SQLITE_OK) {
-          sqlite3_bind_text(updStmt, 1, responseData ? [responseData UTF8String] : "", -1, SQLITE_TRANSIENT);
-          sqlite3_bind_text(updStmt, 2, [recordId UTF8String], -1, SQLITE_TRANSIENT);
-          sqlite3_step(updStmt);
-          sqlite3_finalize(updStmt);
-        }
-      } else {
-        sqlite3_stmt *updStmt;
-        const char *updateSQL = "UPDATE download_queue SET Status = 'failed', Error = ? WHERE Id = ?;";
-        if (sqlite3_prepare_v2(db, updateSQL, -1, &updStmt, NULL) == SQLITE_OK) {
-          sqlite3_bind_text(updStmt, 1, [downloadError UTF8String], -1, SQLITE_TRANSIENT);
-          sqlite3_bind_text(updStmt, 2, [recordId UTF8String], -1, SQLITE_TRANSIENT);
-          sqlite3_step(updStmt);
-          sqlite3_finalize(updStmt);
-        }
-
+  for (;;) {
+    NSArray *uploads = [self pendingRowsInTable:@"sync_queue" strategyColumn:@"UploadStrategy" db:db excluding:takenUploads];
+    NSArray *downloads = [self pendingRowsInTable:@"download_queue" strategyColumn:@"DownloadStrategy" db:db excluding:takenDownloads];
+    if (uploads.count == 0 && downloads.count == 0) {
+      if (firstPass) {
         if (self.enableNotifications) {
-          NSString *title = self.notificationTexts[@"downloadFailureTitle"] ?: @"Download Suspended";
-          NSString *bodyPattern = self.notificationTexts[@"downloadFailureBody"] ?: @"Download failed: {error}. Will retry automatically.";
-          NSString *body = [bodyPattern stringByReplacingOccurrencesOfString:@"{error}" withString:downloadError];
-          [self sendLocalNotificationWithTitle:title body:body isSilent:NO];
+          [self sendLocalNotificationWithTitle:self.notificationTexts[@"successTitle"] ?: @"Synchronization Complete"
+                                          body:self.notificationTexts[@"successBody"] ?: @"All offline records successfully uploaded."
+                                      isSilent:NO];
         }
-        [self broadcastEvent:@"failed_download" percentage:percentage completed:completedDownloadCount total:totalDownloadCount error:downloadError];
-
-        // Only a genuine connectivity failure (the request never reached the server) should
-        // abort the whole run. An HTTP error response means the server was reached and
-        // rejected this specific record — it's already marked "failed" above; let the loop
-        // continue so unrelated queued items still get attempted.
-        BOOL isConnectivityFailure = [downloadError hasPrefix:@"Download Exception:"];
-        if (isConnectivityFailure) {
-          downloadAborted = YES;
-        }
+        [self broadcastEvent:@"completed" percentage:100 completed:0 total:0 error:nil];
+        sqlite3_close(db);
+        return BSSyncOutcomeCompleted;
       }
-
-      if (downloadAborted) {
-        break;
-      }
+      break;
     }
+
+    // ----------------- UPLOAD PROCESS -----------------
+    if (uploads.count > 0) {
+      for (NSDictionary *item in uploads) [takenUploads addObject:item[@"Id"]];
+      if (!uploadsStarted) {
+        [self broadcastEvent:@"started" percentage:0 completed:0 total:(int)uploads.count error:nil];
+        uploadsStarted = YES;
+      }
+      totalCount += (int)uploads.count;
+      outcome = [self uploadItems:uploads db:db completed:&completedCount total:&totalCount];
+      if (outcome) break;
+    }
+
+    // ----------------- DOWNLOAD PROCESS -----------------
+    if (downloads.count > 0) {
+      for (NSDictionary *item in downloads) [takenDownloads addObject:item[@"Id"]];
+      if (!downloadsStarted) {
+        [self broadcastEvent:@"started_download" percentage:0 completed:0 total:(int)downloads.count error:nil];
+        downloadsStarted = YES;
+      }
+      totalDownloadCount += (int)downloads.count;
+      outcome = [self downloadItems:downloads db:db completed:&completedDownloadCount total:&totalDownloadCount uploadCompleted:completedCount uploadTotal:totalCount];
+      if (outcome) break;
+    }
+
+    if (!self.rerunRequested) break;
+    self.rerunRequested = NO;
+    firstPass = NO;
   }
 
-  if (downloadAborted) {
-    self.isSyncRunning = NO;
+  if (outcome) {
     sqlite3_close(db);
-    if (bgTask != UIBackgroundTaskInvalid) {
-      [[UIApplication sharedApplication] endBackgroundTask:bgTask];
-      bgTask = UIBackgroundTaskInvalid;
-    }
-    return;
+    return outcome;
   }
 
   if (self.enableNotifications) {
@@ -1249,14 +1226,248 @@
   }
 
   [self broadcastEvent:@"completed" percentage:100 completed:completedCount + completedDownloadCount total:totalCount + totalDownloadCount error:nil];
-
-  self.isSyncRunning = NO;
   sqlite3_close(db);
+  return BSSyncOutcomeCompleted;
+}
 
-  if (bgTask != UIBackgroundTaskInvalid) {
-    [[UIApplication sharedApplication] endBackgroundTask:bgTask];
-    bgTask = UIBackgroundTaskInvalid;
+// Returns nil when every item was attempted, otherwise the outcome that stopped the loop.
+- (NSString *)uploadItems:(NSArray<NSDictionary *> *)items db:(sqlite3 *)db completed:(int *)completedCount total:(int *)totalCount {
+  for (NSDictionary *item in items) {
+    // One pool per record: the file data, its base64 and the request body are autoreleased,
+    // and without a pool they all stayed alive until the whole run ended (about 1.5 GB for
+    // the 336-photo demo audit).
+    @autoreleasepool {
+      if (self.isSyncCancelled) {
+        [self broadcastEvent:@"failed" percentage:*totalCount > 0 ? (int)(((float)*completedCount / (float)*totalCount) * 100) : 0 completed:*completedCount total:*totalCount error:[self stopMessageForCancellation]];
+        return [self stopOutcomeForCancellation];
+      }
+      NSString *recordId = item[@"Id"];
+      NSDictionary *row = [self currentRowInTable:@"sync_queue" strategyColumn:@"UploadStrategy" recordId:recordId db:db];
+      if (!row) {
+        LogDebug(@"[BG-SYNC-IOS] Record %@ was removed or completed during the run; skipping it.", recordId);
+        (*totalCount)--;
+        continue;
+      }
+      NSString *filePath = [row[@"FilePath"] length] > 0 ? row[@"FilePath"] : nil;
+
+      NSString *uploadError = nil;
+      if ([row[@"Strategy"] caseInsensitiveCompare:@"PRESIGNED_URL"] == NSOrderedSame) {
+        uploadError = [self uploadItemViaPresignedUrlWithPayload:row[@"Payload"] endpoint:row[@"Endpoint"] filePath:filePath];
+      } else {
+        uploadError = [self uploadItemWithPayload:row[@"Payload"] endpoint:row[@"Endpoint"] filePath:filePath];
+      }
+
+      int percentage = (int)(((float)(*completedCount + 1) / (float)*totalCount) * 100);
+
+      if (uploadError == nil) {
+        (*completedCount)++;
+        if (self.autoDeleteCompleted) {
+          sqlite3_stmt *delStmt;
+          if (sqlite3_prepare_v2(db, "DELETE FROM sync_queue WHERE Id = ?;", -1, &delStmt, NULL) == SQLITE_OK) {
+            sqlite3_bind_text(delStmt, 1, [recordId UTF8String], -1, SQLITE_TRANSIENT);
+            sqlite3_step(delStmt);
+            sqlite3_finalize(delStmt);
+          }
+        } else {
+          [self setStatus:@"completed" error:nil responseData:nil table:@"sync_queue" recordId:recordId db:db];
+        }
+
+        [self broadcastEvent:@"progress" percentage:percentage completed:*completedCount total:*totalCount error:nil];
+
+        if (self.enableNotifications) {
+          NSString *title = self.notificationTexts[@"progressTitle"] ?: @"Syncing in Background";
+          NSString *bodyPattern = self.notificationTexts[@"progressBody"] ?: @"Synchronizing: {current} of {total} records ({percentage}%)";
+          NSString *body = [bodyPattern stringByReplacingOccurrencesOfString:@"{current}" withString:[NSString stringWithFormat:@"%d", *completedCount]];
+          body = [body stringByReplacingOccurrencesOfString:@"{total}" withString:[NSString stringWithFormat:@"%d", *totalCount]];
+          body = [body stringByReplacingOccurrencesOfString:@"{percentage}" withString:[NSString stringWithFormat:@"%d", percentage]];
+          [self sendLocalNotificationWithTitle:title body:body isSilent:YES];
+        }
+        continue;
+      }
+
+      [self setStatus:@"failed" error:uploadError responseData:nil table:@"sync_queue" recordId:recordId db:db];
+
+      // Only a genuine connectivity failure (the request never reached the server) should
+      // abort the whole run. An HTTP error response means the server was reached and
+      // rejected this specific record — it's already marked "failed" above; let the loop
+      // continue so unrelated queued items still get attempted.
+      BOOL isConnectivityFailure = [uploadError hasPrefix:@"Upload Exception:"] ||
+          [uploadError hasPrefix:@"Handshake exception:"] ||
+          [uploadError hasPrefix:@"Cloud upload Exception:"];
+
+      if (self.enableNotifications && !(isConnectivityFailure && self.backgroundTimeExpired)) {
+        NSString *title = self.notificationTexts[@"failureTitle"] ?: @"Sync Suspended";
+        NSString *bodyPattern = self.notificationTexts[@"failureBody"] ?: @"Sync paused: {error}. Will resume automatically.";
+        NSString *body = [bodyPattern stringByReplacingOccurrencesOfString:@"{error}" withString:uploadError];
+        [self sendLocalNotificationWithTitle:title body:body isSilent:NO];
+      }
+      [self broadcastEvent:@"failed" percentage:percentage completed:*completedCount total:*totalCount error:uploadError];
+
+      if (isConnectivityFailure) {
+        // A request cut by the app's suspension after the background time ran out is not a
+        // network problem: resume when the app is back instead of backing off.
+        return self.backgroundTimeExpired ? BSSyncOutcomeExpired : BSSyncOutcomeConnectivity;
+      }
+    }
   }
+  return nil;
+}
+
+- (NSString *)downloadItems:(NSArray<NSDictionary *> *)items db:(sqlite3 *)db completed:(int *)completedDownloadCount total:(int *)totalDownloadCount uploadCompleted:(int)completedCount uploadTotal:(int)totalCount {
+  for (NSDictionary *item in items) {
+    @autoreleasepool {
+      if (self.isSyncCancelled) {
+        [self broadcastEvent:@"failed" percentage:*totalDownloadCount > 0 ? (int)(((float)*completedDownloadCount / (float)*totalDownloadCount) * 100) : 0 completed:completedCount + *completedDownloadCount total:totalCount + *totalDownloadCount error:[self stopMessageForCancellation]];
+        return [self stopOutcomeForCancellation];
+      }
+
+      NSString *recordId = item[@"Id"];
+      NSDictionary *row = [self currentRowInTable:@"download_queue" strategyColumn:@"DownloadStrategy" recordId:recordId db:db];
+      if (!row) {
+        LogDebug(@"[BG-SYNC-IOS] Download %@ was removed or completed during the run; skipping it.", recordId);
+        (*totalDownloadCount)--;
+        continue;
+      }
+      NSString *filePath = [row[@"FilePath"] length] > 0 ? row[@"FilePath"] : nil;
+
+      int percentage = (int)(((float)(*completedDownloadCount + 1) / (float)*totalDownloadCount) * 100);
+
+      [self broadcastEvent:@"progress_download" percentage:percentage completed:*completedDownloadCount + 1 total:*totalDownloadCount error:nil];
+
+      if (self.enableNotifications) {
+        NSString *title = self.notificationTexts[@"downloadProgressTitle"] ?: @"Background Download Active";
+        NSString *bodyPattern = self.notificationTexts[@"downloadProgressBody"] ?: @"Downloading: {current} of {total} files ({percentage}%)";
+        NSString *body = [bodyPattern stringByReplacingOccurrencesOfString:@"{current}" withString:[NSString stringWithFormat:@"%d", *completedDownloadCount + 1]];
+        body = [body stringByReplacingOccurrencesOfString:@"{total}" withString:[NSString stringWithFormat:@"%d", *totalDownloadCount]];
+        body = [body stringByReplacingOccurrencesOfString:@"{percentage}" withString:[NSString stringWithFormat:@"%d", percentage]];
+        [self sendLocalNotificationWithTitle:title body:body isSilent:YES];
+      }
+
+      NSString *downloadError = nil;
+      NSString *responseData = nil;
+
+      if ([row[@"Strategy"] caseInsensitiveCompare:@"BINARY_FILE"] == NSOrderedSame) {
+        downloadError = [self performBinaryFileDownloadWithUrl:row[@"Endpoint"] filePath:filePath];
+      } else {
+        downloadError = [self performDownloadWithEndpoint:row[@"Endpoint"] payload:row[@"Payload"] responseData:&responseData];
+      }
+
+      if (downloadError == nil) {
+        (*completedDownloadCount)++;
+        [self setStatus:@"completed" error:nil responseData:responseData ?: @"" table:@"download_queue" recordId:recordId db:db];
+        continue;
+      }
+
+      [self setStatus:@"failed" error:downloadError responseData:nil table:@"download_queue" recordId:recordId db:db];
+
+      BOOL isConnectivityFailure = [downloadError hasPrefix:@"Download Exception:"];
+      if (self.enableNotifications && !(isConnectivityFailure && self.backgroundTimeExpired)) {
+        NSString *title = self.notificationTexts[@"downloadFailureTitle"] ?: @"Download Suspended";
+        NSString *bodyPattern = self.notificationTexts[@"downloadFailureBody"] ?: @"Download failed: {error}. Will retry automatically.";
+        NSString *body = [bodyPattern stringByReplacingOccurrencesOfString:@"{error}" withString:downloadError];
+        [self sendLocalNotificationWithTitle:title body:body isSilent:NO];
+      }
+      [self broadcastEvent:@"failed_download" percentage:percentage completed:*completedDownloadCount total:*totalDownloadCount error:downloadError];
+
+      // Only a genuine connectivity failure (the request never reached the server) should
+      // abort the whole run. An HTTP error response means the server was reached and
+      // rejected this specific record — it's already marked "failed" above; let the loop
+      // continue so unrelated queued items still get attempted.
+      if (isConnectivityFailure) {
+        return self.backgroundTimeExpired ? BSSyncOutcomeExpired : BSSyncOutcomeConnectivity;
+      }
+    }
+  }
+  return nil;
+}
+
+static NSString *BSSyncMimeType(NSString *path) {
+  NSString *extension = [path pathExtension].lowercaseString;
+  if ([extension isEqualToString:@"jpg"] || [extension isEqualToString:@"jpeg"]) return @"image/jpeg";
+  if ([extension isEqualToString:@"png"]) return @"image/png";
+  if ([extension isEqualToString:@"gif"]) return @"image/gif";
+  if ([extension isEqualToString:@"pdf"]) return @"application/pdf";
+  if ([extension isEqualToString:@"mp4"]) return @"video/mp4";
+  return @"application/octet-stream";
+}
+
+static NSJSONWritingOptions BSSyncJSONOptions(void) {
+  // Base64 and URLs are full of "/", which NSJSONSerialization escapes as "\/" by default.
+  if (@available(iOS 13.0, *)) return NSJSONWritingWithoutEscapingSlashes;
+  return 0;
+}
+
+// A JSON string literal (with quotes) for `value`.
+static NSData *BSSyncJSONString(NSString *value) {
+  NSData *array = [NSJSONSerialization dataWithJSONObject:@[value ?: @""] options:BSSyncJSONOptions() error:nil];
+  return [array subdataWithRange:NSMakeRange(1, array.length - 2)];
+}
+
+// Writes the REST_PAYLOAD request body, {"payload": ..., "file": {"filename", "contentType",
+// "base64Data"}} (docs/rest-api-signature.md), to a temporary file. The file is read and
+// base64-encoded in chunks, so only one chunk is in memory at a time instead of the file, its
+// base64 copy and the serialized body all at once (about 4x the file size before). Returns
+// the body file path, or nil with *errorOut set.
+- (NSString *)writeRestPayloadBodyWithPayload:(NSString *)payload filePath:(NSString *)filePath error:(NSString **)errorOut {
+  NSMutableDictionary *requestDict = [NSMutableDictionary dictionary];
+  NSError *jsonError = nil;
+  id parsedPayload = [NSJSONSerialization JSONObjectWithData:[payload ?: @"" dataUsingEncoding:NSUTF8StringEncoding] options:NSJSONReadingAllowFragments error:&jsonError];
+  requestDict[@"payload"] = (jsonError || !parsedPayload) ? (payload ?: @"") : parsedPayload;
+  NSData *head = [NSJSONSerialization dataWithJSONObject:requestDict options:BSSyncJSONOptions() error:nil];
+  if (!head) {
+    *errorOut = @"Local error: the payload could not be serialized to JSON.";
+    return nil;
+  }
+
+  NSString *bodyPath = [NSTemporaryDirectory() stringByAppendingPathComponent:[NSString stringWithFormat:@"bg-sync-body-%@.json", [[NSUUID UUID] UUIDString]]];
+  if (![[NSFileManager defaultManager] createFileAtPath:bodyPath contents:nil attributes:nil]) {
+    *errorOut = @"Local error: could not create the request body file.";
+    return nil;
+  }
+  NSFileHandle *out = [NSFileHandle fileHandleForWritingAtPath:bodyPath];
+
+  NSString *cleanPath = [filePath stringByReplacingOccurrencesOfString:@"file://" withString:@""];
+  BOOL isDirectory = NO;
+  BOOL hasFile = cleanPath.length > 0 && [[NSFileManager defaultManager] fileExistsAtPath:cleanPath isDirectory:&isDirectory] && !isDirectory;
+  NSFileHandle *in = hasFile ? [NSFileHandle fileHandleForReadingAtPath:cleanPath] : nil;
+  if (hasFile && !in) {
+    [out closeFile];
+    [[NSFileManager defaultManager] removeItemAtPath:bodyPath error:nil];
+    *errorOut = [NSString stringWithFormat:@"Local error: could not read file at path: %@", cleanPath];
+    return nil;
+  }
+
+  @try {
+    if (!in) {
+      [out writeData:head];
+    } else {
+      // head is {"payload":...}; drop its closing brace and append the file object.
+      [out writeData:[head subdataWithRange:NSMakeRange(0, head.length - 1)]];
+      NSMutableData *fileHead = [NSMutableData dataWithData:[@",\"file\":{\"filename\":" dataUsingEncoding:NSUTF8StringEncoding]];
+      [fileHead appendData:BSSyncJSONString([cleanPath lastPathComponent])];
+      [fileHead appendData:[@",\"contentType\":" dataUsingEncoding:NSUTF8StringEncoding]];
+      [fileHead appendData:BSSyncJSONString(BSSyncMimeType(cleanPath))];
+      [fileHead appendData:[@",\"base64Data\":\"" dataUsingEncoding:NSUTF8StringEncoding]];
+      [out writeData:fileHead];
+      for (;;) {
+        @autoreleasepool {
+          NSData *chunk = [in readDataOfLength:3 * 256 * 1024];  // a multiple of 3: no padding mid-stream
+          if (chunk.length == 0) break;
+          [out writeData:[chunk base64EncodedDataWithOptions:0]];
+        }
+      }
+      [out writeData:[@"\"}}" dataUsingEncoding:NSUTF8StringEncoding]];
+    }
+  } @catch (NSException *exception) {
+    [in closeFile];
+    [out closeFile];
+    [[NSFileManager defaultManager] removeItemAtPath:bodyPath error:nil];
+    *errorOut = [NSString stringWithFormat:@"Local error: could not write the request body: %@", exception.reason];
+    return nil;
+  }
+  [in closeFile];
+  [out closeFile];
+  return bodyPath;
 }
 
 // Returns nil on success, or an error description on failure. A "Upload Exception:" prefix
@@ -1281,55 +1492,21 @@
     }
   }
 
-  NSMutableDictionary *requestDict = [NSMutableDictionary dictionary];
-  NSError *jsonError = nil;
-  id parsedPayload = [NSJSONSerialization JSONObjectWithData:[payload dataUsingEncoding:NSUTF8StringEncoding] options:NSJSONReadingAllowFragments error:&jsonError];
-  if (jsonError || !parsedPayload) {
-    requestDict[@"payload"] = payload;
-  } else {
-    requestDict[@"payload"] = parsedPayload;
+  NSString *bodyError = nil;
+  NSString *bodyPath = [self writeRestPayloadBodyWithPayload:payload filePath:filePath error:&bodyError];
+  if (!bodyPath) {
+    LogDebug(@"Error: %@", bodyError);
+    return bodyError;
   }
-
-  if (filePath && filePath.length > 0) {
-    NSString *cleanPath = [filePath stringByReplacingOccurrencesOfString:@"file://" withString:@""];
-    NSFileManager *fileManager = [NSFileManager defaultManager];
-    if ([fileManager fileExistsAtPath:cleanPath]) {
-      NSString *fileName = [cleanPath lastPathComponent];
-      NSData *fileData = [NSData dataWithContentsOfFile:cleanPath];
-      NSString *base64Data = [fileData base64EncodedStringWithOptions:0];
-
-      NSString *mimeType = @"application/octet-stream";
-      NSString *extension = [fileName pathExtension].lowercaseString;
-      if ([extension isEqualToString:@"jpg"] || [extension isEqualToString:@"jpeg"]) {
-        mimeType = @"image/jpeg";
-      } else if ([extension isEqualToString:@"png"]) {
-        mimeType = @"image/png";
-      } else if ([extension isEqualToString:@"gif"]) {
-        mimeType = @"image/gif";
-      } else if ([extension isEqualToString:@"pdf"]) {
-        mimeType = @"application/pdf";
-      } else if ([extension isEqualToString:@"mp4"]) {
-        mimeType = @"video/mp4";
-      }
-
-      NSMutableDictionary *fileDict = [NSMutableDictionary dictionary];
-      fileDict[@"filename"] = fileName;
-      fileDict[@"contentType"] = mimeType;
-      fileDict[@"base64Data"] = base64Data;
-
-      requestDict[@"file"] = fileDict;
-    }
-  }
-
-  NSData *bodyData = [NSJSONSerialization dataWithJSONObject:requestDict options:0 error:nil];
-  [request setHTTPBody:bodyData];
 
   __block NSData *responseData = nil;
   __block NSURLResponse *response = nil;
   __block NSError *error = nil;
   dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
 
-  NSURLSessionDataTask *task = [[NSURLSession sharedSession] dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *r, NSError *e) {
+  // Upload from the body file: NSURLSession streams it, so memory use no longer grows with
+  // the file size.
+  NSURLSessionUploadTask *task = [[NSURLSession sharedSession] uploadTaskWithRequest:request fromFile:[NSURL fileURLWithPath:bodyPath] completionHandler:^(NSData *data, NSURLResponse *r, NSError *e) {
       responseData = data;
       response = r;
       error = e;
@@ -1337,6 +1514,7 @@
   }];
   [task resume];
   dispatch_semaphore_wait(semaphore, DISPATCH_TIME_FOREVER);
+  [[NSFileManager defaultManager] removeItemAtPath:bodyPath error:nil];
 
   if (error) {
     LogDebug(@"Error: Background Upload Request Failed: %@", error.localizedDescription);
@@ -1456,18 +1634,7 @@
   }
 
   if (![uploadRequest valueForHTTPHeaderField:@"Content-Type"]) {
-    NSString *mimeType = @"application/octet-stream";
-    NSString *extension = [cleanPath pathExtension].lowercaseString;
-    if ([extension isEqualToString:@"jpg"] || [extension isEqualToString:@"jpeg"]) {
-      mimeType = @"image/jpeg";
-    } else if ([extension isEqualToString:@"png"]) {
-      mimeType = @"image/png";
-    } else if ([extension isEqualToString:@"gif"]) {
-      mimeType = @"image/gif";
-    } else if ([extension isEqualToString:@"pdf"]) {
-      mimeType = @"application/pdf";
-    }
-    [uploadRequest setValue:mimeType forHTTPHeaderField:@"Content-Type"];
+    [uploadRequest setValue:BSSyncMimeType(cleanPath) forHTTPHeaderField:@"Content-Type"];
   }
 
   NSInputStream *fileStream = [NSInputStream inputStreamWithFileAtPath:cleanPath];
@@ -1506,14 +1673,25 @@
   content.body = body;
   if (!isSilent) {
     content.sound = [UNNotificationSound defaultSound];
+  } else if (@available(iOS 15.0, *)) {
+    // Progress updates go to Notification Center without a banner.
+    content.interruptionLevel = UNNotificationInterruptionLevelPassive;
   }
 
-  UNTimeIntervalNotificationTrigger *trigger = [UNTimeIntervalNotificationTrigger triggerWithTimeInterval:1 repeats:NO];
-  UNNotificationRequest *request = [UNNotificationRequest requestWithIdentifier:@"LocalStorageSyncNotification" content:content trigger:trigger];
+  // Delivered right away (nil trigger). The previous 1 s time trigger shared one identifier, so
+  // each new update replaced the still-pending one: when records finished less than a second
+  // apart, no progress notification was ever delivered until the run stopped.
+  UNNotificationRequest *request = [UNNotificationRequest requestWithIdentifier:@"LocalStorageSyncNotification" content:content trigger:nil];
   [[UNUserNotificationCenter currentNotificationCenter] addNotificationRequest:request withCompletionHandler:nil];
 }
 
 - (void)sendLocalNotificationWithTitle:(NSString *)title body:(NSString *)body isSilent:(BOOL)isSilent {
+  if (isSilent) {
+    // At most one silent progress update per second; alerts (success, failure) always go out.
+    CFAbsoluteTime now = CFAbsoluteTimeGetCurrent();
+    if (now - self.lastSilentNotificationAt < 1.0) return;
+    self.lastSilentNotificationAt = now;
+  }
   if (@available(iOS 10.0, *)) {
     // A sync cycle can post one notification per record (dozens in a large batch). Once we
     // know the authorization answer for this process, reuse it instead of paying for an async

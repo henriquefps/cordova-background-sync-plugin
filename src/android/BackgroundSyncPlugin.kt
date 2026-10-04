@@ -179,15 +179,37 @@ class BackgroundSyncPlugin : CordovaPlugin() {
             .addTag(WORK_TAG)
             .build()
 
-        val workManager = WorkManager.getInstance(cordova.context)
-        workManager.cancelUniqueWork(UNIQUE_WORK_NAME)
-        workManager.enqueueUniqueWork(
-            UNIQUE_WORK_NAME,
-            ExistingWorkPolicy.REPLACE,
-            syncWorkRequest
-        )
-
-        callbackContext.success("WorkManager sync task enqueued successfully.")
+        cordova.threadPool.execute {
+            try {
+                val workManager = WorkManager.getInstance(cordova.context)
+                // Replacing a run that is in progress cancels it mid-queue (and used to let the
+                // cancelled run and its replacement send the same records). A running worker
+                // already picks up records enqueued during the run, so keep it and chain at
+                // most one follow-up run behind it for anything enqueued after its last check.
+                val infos = try {
+                    workManager.getWorkInfosForUniqueWork(UNIQUE_WORK_NAME).get()
+                } catch (e: Exception) {
+                    emptyList()
+                }
+                val running = infos.any { it.state == WorkInfo.State.RUNNING }
+                val followUpQueued = infos.any { it.state == WorkInfo.State.BLOCKED }
+                when {
+                    running && followUpQueued -> {
+                        callbackContext.success("Sync already running; a follow-up run is already queued.")
+                    }
+                    running -> {
+                        workManager.enqueueUniqueWork(UNIQUE_WORK_NAME, ExistingWorkPolicy.APPEND_OR_REPLACE, syncWorkRequest)
+                        callbackContext.success("Sync already running; a follow-up run was queued.")
+                    }
+                    else -> {
+                        workManager.enqueueUniqueWork(UNIQUE_WORK_NAME, ExistingWorkPolicy.REPLACE, syncWorkRequest)
+                        callbackContext.success("WorkManager sync task enqueued successfully.")
+                    }
+                }
+            } catch (e: Exception) {
+                callbackContext.error("Failed to enqueue sync task: ${e.message}")
+            }
+        }
     }
 
     private fun executeRawQuery(query: String, queryArgs: JSONArray?, callbackContext: CallbackContext) {
@@ -204,7 +226,10 @@ class BackgroundSyncPlugin : CordovaPlugin() {
                 }
 
                 val trimmedQuery = query.trim()
-                if (trimmedQuery.startsWith("SELECT", true) || trimmedQuery.startsWith("PRAGMA", true)) {
+                // Statements that return rows go through rawQuery; execSQL rejects them
+                // ("Queries can be performed using SQLiteDatabase query or rawQuery methods only").
+                val returnsRows = listOf("SELECT", "PRAGMA", "WITH", "EXPLAIN", "VALUES").any { trimmedQuery.startsWith(it, true) }
+                if (returnsRows) {
                     val cursor = db.rawQuery(trimmedQuery, selectionArgs)
                     val resultList = JSONArray()
                     while (cursor.moveToNext()) {

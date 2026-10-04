@@ -10,8 +10,9 @@
 @property (nonatomic, assign) BOOL autoDeleteCompleted;
 @property (nonatomic, strong) NSDictionary *headers;
 @property (nonatomic, strong) NSDictionary *notificationTexts;
-@property (nonatomic, assign) BOOL isSyncCancelled;
-@property (nonatomic, assign) BOOL isSyncRunning;
+// Read and written from the main thread and from the sync thread, hence atomic.
+@property (atomic, assign) BOOL isSyncCancelled;
+@property (atomic, assign) BOOL isSyncRunning;
 @property (nonatomic, assign) BOOL showDebugLogs;
 @property (nonatomic, assign) BOOL encryptDatabase;
 

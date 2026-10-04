@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fieldbook Backoffice</title>
+<style>
+  @font-face { font-family: 'Inter'; src: url('/fonts/inter-latin-wght-normal.woff2') format('woff2'); font-weight: 100 900; font-display: block; }
+  :root {
+    --bg: #f3f3ee; --surface: #ffffff; --ink: #16170f; --ink-2: #4b4d42; --muted: #8a8c7f;
+    --line: #e4e4dc; --line-2: #d6d6cc; --accent: #4a6b35; --accent-soft: #e6ecdf; --slot: #e9e9e2;
+    --critical: #a8321f; --major: #b8691a; --minor: #8b7d2a; --observation: #5d6b78;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body { background: var(--bg); color: var(--ink); font: 14px/1.4 'Inter', system-ui, sans-serif; font-feature-settings: 'tnum' 1, 'cv11' 1; -webkit-font-smoothing: antialiased; }
+  .app { display: grid; grid-template-rows: 56px auto 1fr; height: 100vh; }
+
+  header.top { display: flex; align-items: center; gap: 28px; padding: 0 28px; background: var(--ink); color: #f3f3ee; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 650; letter-spacing: -0.01em; font-size: 15px; }
+  .brand svg { width: 22px; height: 22px; }
+  nav { display: flex; gap: 22px; font-size: 13px; color: #a9ab9e; }
+  nav span.on { color: #f3f3ee; }
+  .top .spacer { flex: 1; }
+  .user { display: flex; align-items: center; gap: 10px; font-size: 13px; color: #c9cabf; }
+  .avatar { width: 28px; height: 28px; border-radius: 50%; background: #2c2e22; display: grid; place-items: center; font-size: 11px; font-weight: 600; color: #e6ecdf; }
+
+  .head { padding: 18px 28px 0; display: grid; gap: 14px; }
+  .title-row { display: flex; align-items: flex-end; gap: 16px; }
+  .crumb { font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+  h1 { margin: 0; font-size: 24px; font-weight: 650; letter-spacing: -0.02em; }
+  .meta { color: var(--ink-2); font-size: 13px; margin-top: 4px; display: flex; gap: 14px; }
+  .meta span + span::before { content: ''; display: inline-block; width: 3px; height: 3px; border-radius: 50%; background: var(--muted); margin-right: 14px; vertical-align: middle; }
+  .status { margin-left: auto; display: inline-flex; align-items: center; gap: 8px; padding: 7px 12px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); font-size: 13px; font-weight: 550; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+  .status.live .dot { background: var(--accent); box-shadow: 0 0 0 0 rgba(74,107,53,.5); animation: pulse 1.6s infinite; }
+  .status.done .dot { background: var(--accent); }
+  .status.stalled .dot { background: var(--major); }
+  @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(74,107,53,.45); } 70% { box-shadow: 0 0 0 8px rgba(74,107,53,0); } 100% { box-shadow: 0 0 0 0 rgba(74,107,53,0); } }
+
+  .kpis { display: grid; grid-template-columns: 1.35fr 1.35fr 1fr 1fr; gap: 14px; }
+  .kpi { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 18px 14px; }
+  .kpi .label { font-size: 12px; color: var(--muted); font-weight: 500; }
+  .kpi .value { font-size: 28px; font-weight: 650; letter-spacing: -0.03em; margin-top: 2px; }
+  .kpi .value small { font-size: 15px; color: var(--muted); font-weight: 500; letter-spacing: 0; margin-left: 4px; }
+  .bar { height: 6px; border-radius: 3px; background: var(--slot); margin-top: 10px; overflow: hidden; }
+  .bar > i { display: block; height: 100%; width: 0; background: var(--accent); border-radius: 3px; transition: width .4s ease; }
+
+  main { display: grid; grid-template-columns: 1fr 392px; gap: 14px; padding: 14px 28px 20px; min-height: 0; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; min-height: 0; display: flex; flex-direction: column; }
+  .card h2 { font-size: 13px; font-weight: 600; margin: 0; padding: 14px 18px 0; display: flex; align-items: baseline; gap: 8px; }
+  .card h2 .sub { color: var(--muted); font-weight: 500; }
+  .card h2 .right { margin-left: auto; color: var(--muted); font-weight: 500; font-size: 12px; }
+
+  .mosaic { flex: 1; min-height: 0; padding: 12px 18px 12px; display: grid; grid-template-columns: repeat(var(--cols, 21), var(--tw, 1fr)); gap: 4px; align-content: start; justify-content: center; }
+  .slot { width: var(--tw); height: var(--th); border-radius: 3px; background: var(--slot); position: relative; overflow: hidden; }
+  .slot img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transform: scale(1.08); transition: opacity .5s ease, transform .6s ease; }
+  .slot.in img { opacity: 1; transform: none; }
+  .slot.new::after { content: ''; position: absolute; inset: 0; border-radius: 3px; box-shadow: inset 0 0 0 2px var(--accent); animation: fade 1.6s forwards; }
+  @keyframes fade { to { opacity: 0; } }
+  .legend { display: flex; gap: 16px; padding: 0 18px 14px; font-size: 12px; color: var(--muted); flex-wrap: wrap; }
+  .legend b { color: var(--ink-2); font-weight: 550; }
+
+  .side { display: grid; grid-template-rows: auto minmax(0, 1fr); gap: 14px; min-height: 0; }
+  .latest { padding-bottom: 12px; }
+  .latest .frame { margin: 12px 18px 0; aspect-ratio: 2 / 1; border-radius: 8px; background: var(--slot); overflow: hidden; position: relative; }
+  .latest .frame img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .latest .frame .empty[hidden] { display: none; }
+  .latest .frame .empty { position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted); font-size: 13px; }
+  .latest .caption { padding: 10px 18px 0; display: grid; gap: 2px; }
+  .latest .caption .t { font-weight: 600; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .latest .caption .s { font-size: 12px; color: var(--muted); display: flex; gap: 10px; }
+
+  .areas { overflow: hidden; }
+  .area-list { padding: 10px 18px 12px; display: grid; gap: 7px; }
+  .area .row { display: flex; align-items: baseline; gap: 8px; font-size: 13px; line-height: 1.25; }
+  .area .name { font-weight: 550; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .area .count { margin-left: auto; color: var(--ink-2); font-size: 12px; white-space: nowrap; }
+  .area .count.full { color: var(--accent); font-weight: 600; }
+  .segs { display: flex; gap: 2px; margin-top: 4px; }
+  .seg { height: 5px; border-radius: 2px; background: var(--slot); position: relative; overflow: hidden; }
+  .seg > i { position: absolute; inset: 0 auto 0 0; width: 0; background: var(--accent); transition: width .4s ease; }
+  .seg.critical > i { background: var(--critical); } .seg.major > i { background: var(--major); }
+  .seg.minor > i { background: var(--minor); } .seg.observation > i { background: var(--observation); }
+  .sev-key { display: flex; gap: 12px; margin-left: auto; }
+  .sev-key i { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="brand">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#a7c08f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4h6l1 2h3a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h3z"/><path d="m9 13 2 2 4-4"/></svg>
+      Fieldbook
+    </div>
+    <nav><span>Overview</span><span class="on">Audits</span><span>Sites</span><span>Actions</span><span>Reports</span></nav>
+    <div class="spacer"></div>
+    <div class="user"><span>QHSE Office</span><div class="avatar">RA</div></div>
+  </header>
+
+  <section class="head">
+    <div class="title-row">
+      <div>
+        <div class="crumb">Audits / <span id="auditId"></span></div>
+        <h1 id="auditTitle">Loading audit</h1>
+        <div class="meta"><span id="site"></span><span id="auditor"></span><span id="date"></span></div>
+      </div>
+      <div class="status" id="status"><span class="dot"></span><span id="statusText">Waiting for device</span></div>
+    </div>
+    <div class="kpis">
+      <div class="kpi"><div class="label">Photos received</div><div class="value"><span id="kPhotos">0</span><small id="kPhotosOf">of 0</small></div><div class="bar"><i id="barPhotos"></i></div></div>
+      <div class="kpi"><div class="label">Data received</div><div class="value"><span id="kMb">0.0</span><small id="kMbOf">of 0 MB</small></div><div class="bar"><i id="barMb"></i></div></div>
+      <div class="kpi"><div class="label">Throughput, last 10 s</div><div class="value"><span id="kRate">0.0</span><small>MB/s</small></div></div>
+      <div class="kpi"><div class="label">Elapsed since first photo</div><div class="value" id="kElapsed">0:00</div></div>
+    </div>
+  </section>
+
+  <main>
+    <div class="card">
+      <h2>Photo evidence <span class="sub" id="gridSub">in queue order</span><span class="right" id="gridRight"></span></h2>
+      <div class="mosaic" id="mosaic"></div>
+      <div class="legend" id="legend"></div>
+    </div>
+    <div class="side">
+      <div class="card latest">
+        <h2>Latest arrival <span class="right" id="latestTime"></span></h2>
+        <div class="frame"><img id="latestImg" alt="" hidden><div class="empty" id="latestEmpty">No photos yet</div></div>
+        <div class="caption"><div class="t" id="latestTitle">&nbsp;</div><div class="s"><span id="latestFinding"></span><span id="latestSize"></span></div></div>
+      </div>
+      <div class="card areas">
+        <h2>Findings by area <span class="right" id="findingsDone"></span></h2>
+        <div class="area-list" id="areaList"></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const fmtMb = (b) => (b / 1e6).toFixed(1);
+let audit, expected = { photos: 0, bytes: 0 };
+let slots = {}, findingEls = {}, findingCounts = {}, areaOfFinding = {};
+let received = { photos: 0, bytes: 0 }, firstAt = null, lastAt = null;
+const counted = new Set();
+const samples = []; // [time, bytes] for throughput
+
+function layout() {
+  $('auditId').textContent = audit.id;
+  $('auditTitle').textContent = audit.title;
+  $('site').textContent = `${audit.site}, ${audit.unit}`;
+  $('auditor').textContent = `Auditor ${audit.auditor}`;
+  $('date').textContent = new Date(audit.date + 'T12:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+  $('kPhotosOf').textContent = `of ${audit.photoCount}`;
+  $('kMbOf').textContent = `of ${fmtMb(audit.totalBytes)} MB`;
+  expected = { photos: audit.photoCount, bytes: audit.totalBytes };
+  const mosaic = $('mosaic');
+  const list = $('areaList');
+  for (const area of audit.areas) {
+    const el = document.createElement('div');
+    el.className = 'area';
+    const total = area.findings.reduce((n, f) => n + f.photos.length, 0);
+    el.innerHTML = `<div class="row"><span class="name">${area.name}</span><span class="count" data-total="${total}">0 / ${total}</span></div><div class="segs"></div>`;
+    const segs = el.querySelector('.segs');
+    for (const f of area.findings) {
+      areaOfFinding[f.id] = el;
+      findingCounts[f.id] = { got: 0, total: f.photos.length };
+      const s = document.createElement('div');
+      s.className = `seg ${f.severity}`;
+      s.style.flex = f.photos.length;
+      s.title = `${f.id} ${f.title}`;
+      s.innerHTML = '<i></i>';
+      segs.appendChild(s);
+      findingEls[f.id] = s;
+      for (const p of f.photos) {
+        const d = document.createElement('div');
+        d.className = 'slot';
+        mosaic.appendChild(d);
+        slots[p.id] = d;
+      }
+    }
+    list.appendChild(el);
+  }
+  $('legend').innerHTML = `<span><b>${audit.areas.length}</b> areas</span><span><b>${audit.findingCount}</b> findings</span><span><b>${audit.photoCount}</b> photos expected from the device</span><span class="sev-key"><span><i style="background:var(--critical)"></i>Critical</span><span><i style="background:var(--major)"></i>Major</span><span><i style="background:var(--minor)"></i>Minor</span><span><i style="background:var(--observation)"></i>Observation</span></span>`;
+}
+
+// Pick the column count that gives the largest 4:3 tiles while all slots fit.
+function fitMosaic() {
+  const m = $('mosaic');
+  const n = Object.keys(slots).length;
+  if (!n) return;
+  const cs = getComputedStyle(m);
+  const W = m.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+  const H = m.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+  const gap = 4;
+  let best = { tw: 0 };
+  for (let cols = 8; cols <= 60; cols++) {
+    const rows = Math.ceil(n / cols);
+    let tw = (W - gap * (cols - 1)) / cols;
+    let th = tw * 3 / 4;
+    if (rows * th + gap * (rows - 1) > H) { th = (H - gap * (rows - 1)) / rows; tw = th * 4 / 3; }
+    if (tw > best.tw) best = { cols, tw, th };
+  }
+  m.style.setProperty('--cols', best.cols);
+  m.style.setProperty('--tw', `${Math.floor(best.tw)}px`);
+  m.style.setProperty('--th', `${Math.floor(best.th)}px`);
+}
+window.addEventListener('resize', fitMosaic);
+
+function applyPhoto(p, animate) {
+  const slot = slots[p.photoId];
+  if (slot && !slot.classList.contains('in')) {
+    const img = new Image();
+    img.onload = () => {
+      slot.classList.add('in');
+      if (animate) { slot.classList.add('new'); setTimeout(() => slot.classList.remove('new'), 1700); }
+    };
+    img.src = p.thumb || p.url;
+    slot.appendChild(img);
+  }
+  // Count each photo once. A re-sent photo replaces its server entry with
+  // duplicate: true, so the flag alone would drop it on a page reload.
+  if (!counted.has(p.photoId) && findingCounts[p.findingId]) {
+    counted.add(p.photoId);
+    const fc = findingCounts[p.findingId];
+    fc.got = Math.min(fc.total, fc.got + 1);
+  }
+}
+
+function renderFindings() {
+  const areaTotals = new Map();
+  let done = 0;
+  for (const [id, fc] of Object.entries(findingCounts)) {
+    findingEls[id].firstChild.style.width = `${(fc.got / fc.total) * 100}%`;
+    if (fc.got >= fc.total) done++;
+    const el = areaOfFinding[id];
+    const t = areaTotals.get(el) || 0;
+    areaTotals.set(el, t + fc.got);
+  }
+  for (const [el, got] of areaTotals) {
+    const c = el.querySelector('.count');
+    const total = Number(c.dataset.total);
+    c.textContent = `${got} / ${total}`;
+    c.classList.toggle('full', got >= total);
+  }
+  $('findingsDone').textContent = `${done} of ${Object.keys(findingCounts).length} complete`;
+}
+
+function renderTotals() {
+  $('kPhotos').textContent = received.photos;
+  $('kMb').textContent = fmtMb(received.bytes);
+  $('barPhotos').style.width = `${(received.photos / expected.photos) * 100}%`;
+  $('barMb').style.width = `${(received.bytes / expected.bytes) * 100}%`;
+  $('gridRight').textContent = `${expected.photos - received.photos} to go`;
+}
+
+function showLatest(p, finding) {
+  $('latestImg').src = p.thumb || p.url;
+  $('latestImg').hidden = false;
+  $('latestEmpty').hidden = true;
+  $('latestTitle').textContent = finding ? `${finding.id}  ${finding.title}` : p.findingId;
+  $('latestFinding').textContent = p.originalName || p.fileName;
+  $('latestSize').textContent = `${(p.bytes / 1e6).toFixed(2)} MB`;
+  $('latestTime').textContent = new Date(p.receivedAt).toLocaleTimeString('en-GB');
+}
+
+function tick() {
+  const now = Date.now();
+  while (samples.length && now - samples[0][0] > 10000) samples.shift();
+  const bytes = samples.reduce((n, s) => n + s[1], 0);
+  const span = samples.length ? Math.max(1000, Math.min(10000, now - samples[0][0])) : 10000;
+  $('kRate').textContent = (bytes / 1e6 / (span / 1000)).toFixed(1);
+  if (firstAt) {
+    const end = received.photos >= expected.photos ? lastAt : now;
+    const s = Math.floor((end - firstAt) / 1000);
+    $('kElapsed').textContent = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+  }
+  const st = $('status');
+  st.className = 'status';
+  if (received.photos >= expected.photos && expected.photos) { st.classList.add('done'); $('statusText').textContent = 'All photos received'; }
+  else if (lastAt && now - lastAt < 6000) { st.classList.add('live'); $('statusText').textContent = 'Receiving from device'; }
+  else if (lastAt) { st.classList.add('stalled'); $('statusText').textContent = `No data for ${Math.round((now - lastAt) / 1000)} s`; }
+  else { $('statusText').textContent = 'Waiting for device'; }
+}
+
+function resetView() {
+  for (const s of Object.values(slots)) { s.className = 'slot'; s.innerHTML = ''; }
+  for (const fc of Object.values(findingCounts)) fc.got = 0;
+  counted.clear();
+  received = { photos: 0, bytes: 0 }; firstAt = lastAt = null; samples.length = 0;
+  $('latestImg').hidden = true; $('latestEmpty').hidden = false;
+  $('latestTitle').innerHTML = '&nbsp;'; $('latestFinding').textContent = ''; $('latestSize').textContent = ''; $('latestTime').textContent = '';
+  $('kElapsed').textContent = '0:00';
+}
+
+async function start() {
+  audit = await (await fetch('/api/audit')).json();
+  layout();
+  fitMosaic();
+  const findingById = {};
+  for (const a of audit.areas) for (const f of a.findings) findingById[f.id] = f;
+  const es = new EventSource('/api/events');
+  es.addEventListener('state', (e) => {
+    const s = JSON.parse(e.data);
+    resetView();
+    for (const p of s.photos) applyPhoto(p, false);
+    received = s.received; firstAt = s.firstAt; lastAt = s.lastAt;
+    if (s.photos.length) { const p = s.photos[s.photos.length - 1]; showLatest(p, findingById[p.findingId]); }
+    renderTotals(); renderFindings(); tick();
+  });
+  es.addEventListener('photo', (e) => {
+    const d = JSON.parse(e.data);
+    applyPhoto(d.photo, true);
+    if (!d.photo.duplicate) samples.push([Date.now(), d.photo.bytes]);
+    received = d.received; firstAt = d.firstAt; lastAt = d.lastAt;
+    showLatest(d.photo, findingById[d.photo.findingId]);
+    renderTotals(); renderFindings();
+  });
+  setInterval(tick, 500);
+}
+start();
+</script>
+</body>
+</html>

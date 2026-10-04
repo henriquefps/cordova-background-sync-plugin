@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <plugin xmlns="http://apache.org/cordova/ns/plugins/1.0"
     id="cordova-background-sync-plugin"
-    version="1.0.4-nocipher"
+    version="1.0.5-nocipher"
     xmlns:android="http://schemas.android.com/apk/res/android">
 
     <name>BackgroundSyncPlugin</name>
@@ -67,13 +67,6 @@
             <feature name="BackgroundSyncPlugin">
                 <param name="ios-package" value="BackgroundSyncPlugin"/>
             </feature>
-        </config-file>
-
-        <config-file target="*-Info.plist" parent="UIBackgroundModes">
-            <array>
-                <string>fetch</string>
-                <string>processing</string>
-            </array>
         </config-file>
 
         <config-file target="*-Info.plist" parent="NSLocalNetworkUsageDescription">

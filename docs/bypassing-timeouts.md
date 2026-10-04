@@ -24,17 +24,18 @@ On Android, the task is executed by the native `WorkManager` API. When started:
 
 ### 3. iOS Background Task Assertions
 On iOS, the task uses `UIBackgroundTaskIdentifier` to register an active background execution task with the OS:
-* The OS allocates a dedicated background thread for the task.
-* Even if the user locks the device, the HTTP connections remain open.
-* Transmission uses native socket streams, preventing JavaScript-level interruptions.
+* The sync runs on a native background thread, independent of the WebView.
+* In the foreground it runs for as long as the queue needs.
+* After the app leaves the foreground or the device is locked, iOS allows about 30 seconds more. Then the run pauses with nothing lost and resumes when the app returns to the foreground or calls `sync()` (see [Technical Limitations](limitations.md#3-ios-background-life-cycle)).
+* This needs no `UIBackgroundModes` entry, and the plugin declares none. iOS gives no way to keep uploading for longer from a background task, and the plugin does not use `BGTaskScheduler`.
 
 ### 4. Native Data Transmission
-Even if a media upload takes longer than 60 seconds due to a weak cellular connection (e.g., 2G/3G/4G in remote areas), the mobile OS will keep the HTTP connection open until the server responds. **Downloads** (`REST_PAYLOAD` and `BINARY_FILE`) explicitly set a 5-minute connect/read timeout on both platforms. **Uploads** (`REST_PAYLOAD` and `PRESIGNED_URL`) do not set an explicit timeout at all — the connection is only bounded by the underlying OS/socket default (effectively unbounded) or by the overall background execution budget described above.
+Even if a media upload takes longer than 60 seconds due to a weak cellular connection (e.g., 2G/3G/4G in remote areas), the mobile OS will keep the HTTP connection open until the server responds. **Downloads** (`REST_PAYLOAD` and `BINARY_FILE`) explicitly set a 5-minute connect/read timeout on both platforms. **Uploads** (`REST_PAYLOAD` and `PRESIGNED_URL`) set no explicit timeout on Android, so the connection is only bounded by the underlying OS/socket default (effectively unbounded) or by the overall background execution budget described above. On iOS they use a 300-second timeout, which, like every `NSURLRequest` timeout, is an idle timeout (no bytes sent or received for that long), not a limit on the total upload time.
 
 ---
 
 ## Key Benefits
 
 * **Long-Running Uploads:** Upload heavy photo folders or PDF schematics over slow networks without worrying about connection timeouts.
-* **Immunity to App Minimization:** Lock the screen or check emails while the plugin syncs in the background.
+* **Immunity to App Minimization:** Lock the screen or check emails while the plugin syncs in the background (on iOS, for about 30 seconds, then it resumes when the app is back).
 * **Resilience to Force Closes (Android):** Even if the app is force-closed, `WorkManager` handles the recovery and schedules resumption when the network is restored.

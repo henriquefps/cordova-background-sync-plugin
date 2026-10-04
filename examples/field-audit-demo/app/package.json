@@ -1,0 +1,30 @@
+{
+  "name": "field-audit-demo",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "android:sync": "vite build && cap sync android",
+    "android:apk": "vite build && cap sync android && cd android && ./gradlew assembleDebug",
+    "ios:sync": "vite build && cap sync ios"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.4.0",
+    "@capacitor/app": "^8.1.2",
+    "@capacitor/core": "^8.4.0",
+    "@capacitor/filesystem": "^8.1.2",
+    "@capacitor/ios": "^8.4.0",
+    "@fontsource-variable/inter": "^5.2.5",
+    "cordova-background-sync-plugin": "file:../../..",
+    "lucide-react": "^0.468.0",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.4.0",
+    "@vitejs/plugin-react": "^6.0.1",
+    "vite": "^8.0.12"
+  }
+}
