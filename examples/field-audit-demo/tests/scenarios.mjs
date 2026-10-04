@@ -140,6 +140,20 @@ S['http-503-every-nth'] = { desc: 'Every 4th request answers 503, slow responses
   t.record('503 every 4th + slow responses', '3 failed (503), 9 completed, run reaches completed', `rows ${JSON.stringify(c)}`, c.failed === 3 && c.completed === 9);
 } };
 
+S['event-counts'] = { desc: 'Upload events: onProgress after each sent record (1..N), onFailed with records sent so far, one onStarted and one onCompleted', async run() {
+  await setup();
+  await t.setFaults([{ id: 'ec-003', status: 500 }]);
+  const since = Date.now();
+  await enqueueMany(ids('ec', 6).map((id) => testRecord(id)));
+  await t.plugin('enqueueSync');
+  await waitEvent('completed', since);
+  await t.sleep(1000);
+  const ev = (await t.events(since)).filter((e) => ['started', 'progress', 'failed', 'completed'].includes(e.event));
+  const seq = ev.map((e) => `${e.event}:${e.completedCount}/${e.totalCount}`).join(' ');
+  const expected = 'started:0/6 progress:1/6 progress:2/6 failed:2/6 progress:3/6 progress:4/6 progress:5/6 completed:5/6';
+  t.record('upload event counts', expected, seq, seq === expected);
+} };
+
 S['dropped-connection'] = { desc: 'Server drops the connection on one item: transient, item is retried and delivered', async run() {
   await setup();
   await t.setFaults([{ id: 'dc-004', drop: true, times: 1 }]);
@@ -184,8 +198,10 @@ S['cancel-resync'] = { desc: 'cancelSync mid-run, then sync again: no duplicates
   await t.sleep(4000);
   const later = Object.keys(await deliveries()).length;
   const n = appNotifications();
-  t.record('cancelSync stops the run', 'no new deliveries 3 s after cancel (one in-flight item may finish), no ongoing notification left',
-    `delivered ${afterCancel} right after cancel, ${later} 4 s later, notifications: ${fmtN(n)}`, later === afterCancel && !n.some((x) => x.ongoing));
+  const cancelEvents = (await t.events(since)).filter((e) => e.event === 'failed' && e.error === 'Synchronization cancelled by user');
+  t.record('cancelSync stops the run', 'no new deliveries 3 s after cancel (one in-flight item may finish), exactly one onFailed "Synchronization cancelled by user" with completedCount = records sent, no notification left',
+    `delivered ${afterCancel} right after cancel, ${later} 4 s later, cancel events ${JSON.stringify(cancelEvents.map((e) => ({ completedCount: e.completedCount, totalCount: e.totalCount })))}, notifications: ${fmtN(n)}`,
+    later === afterCancel && n.length === 0 && cancelEvents.length === 1 && cancelEvents[0].completedCount === afterCancel && cancelEvents[0].totalCount === 30);
   since = Date.now();
   await t.plugin('enqueueSync');
   await waitEvent('completed', since);
@@ -215,9 +231,10 @@ S['enqueue-during-run'] = { desc: 'Records enqueued and enqueueSync called while
   const dup = Object.entries(d).filter(([, x]) => x > 1);
   const ev = await t.events(since);
   const starts = ev.filter((e) => e.event === 'started').length;
-  t.record('enqueue + enqueueSync during a run', 'all 30 delivered exactly once; records added mid-run go out without restarting the run',
-    `ids delivered ${Object.keys(d).length}, duplicates ${JSON.stringify(dup)}, started events ${starts}, completed events ${ev.filter((e) => e.event === 'completed').length}`,
-    Object.keys(d).length === 30 && dup.length === 0);
+  const cancels = ev.filter((e) => e.event === 'failed').length;
+  t.record('enqueue + enqueueSync during a run', 'all 30 delivered exactly once; records added mid-run go out without restarting the run; no onFailed (nothing is cancelled)',
+    `ids delivered ${Object.keys(d).length}, duplicates ${JSON.stringify(dup)}, started events ${starts}, failed events ${cancels}, completed events ${ev.filter((e) => e.event === 'completed').length}`,
+    Object.keys(d).length === 30 && dup.length === 0 && cancels === 0);
 } };
 
 S['clear-remove-during-run'] = { desc: 'clearQueue and removeRecords while a run is in progress, and after it', async run() {

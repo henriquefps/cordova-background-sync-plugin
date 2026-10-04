@@ -55,6 +55,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         private const val NETWORK_WAIT_MS = 5 * 60 * 1000L
         private const val NETWORK_POLL_MS = 2000L
         private const val MAX_NETWORK_WAITS_PER_ITEM = 3
+        private const val CANCELLED_MESSAGE = "Synchronization cancelled by user"
     }
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
@@ -157,7 +158,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                 process = { record -> processDownload(db, record, serverUrl, headersStr) }
             )
             if (downloads.outcome != QueueOutcome.DONE) {
-                return finishInterrupted(downloads, isDownload = true)
+                return finishInterrupted(downloads, isDownload = true, sentBefore = uploads.succeeded, totalBefore = uploads.total)
             }
 
             val total = uploads.total + downloads.total
@@ -170,7 +171,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                     updateNotificationPartial(failed, total, downloads.lastError ?: uploads.lastError ?: "")
                 }
             }
-            BackgroundSyncPlugin.sendProgressUpdate("completed", 100, uploads.processed + downloads.processed, total)
+            BackgroundSyncPlugin.sendProgressUpdate("completed", 100, uploads.succeeded + downloads.processed, total)
             return Result.success()
         } finally {
             db.close()
@@ -183,17 +184,25 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
     }
 
     // Final notification and result for a run that did not reach the end of a queue.
-    private fun finishInterrupted(run: QueueRun, isDownload: Boolean): Result {
+    private fun finishInterrupted(run: QueueRun, isDownload: Boolean, sentBefore: Int = 0, totalBefore: Int = 0): Result {
         if (run.outcome == QueueOutcome.STOPPED) {
             val reason = stopReasonCompat()
-            logI("Sync worker stopped by WorkManager (stop reason $reason) after ${run.processed} of ${run.total} items.")
+            logI("Sync worker stopped by WorkManager (stop reason $reason) after ${if (isDownload) run.processed else run.succeeded} of ${run.total} items.")
+            if (reason == WorkInfo.STOP_REASON_CANCELLED_BY_APP) {
+                // cancelSync (enqueueSync no longer cancels a running worker). Same event as iOS,
+                // sent once per cancelled run, with the records sent so far.
+                val sent = sentBefore + if (isDownload) run.processed else run.succeeded
+                val total = totalBefore + run.total
+                val percentage = if (total > 0) ((sent.toFloat() / total.toFloat()) * 100).toInt() else 0
+                BackgroundSyncPlugin.sendProgressUpdate("failed", percentage, sent, total, CANCELLED_MESSAGE)
+            }
             if (enableNotifications) {
                 cancelProgressNotification()
-                // Cancelled by the app (cancelSync, or enqueueSync replacing the run): no notice.
+                // Cancelled by the app (cancelSync): no notification, the app gets the onFailed event.
                 // Any other reason (time limit, lost constraint, quota, ...) is a pause: WorkManager
                 // runs the work again on its own once the system allows it.
                 if (reason != WorkInfo.STOP_REASON_CANCELLED_BY_APP) {
-                    updateNotificationPaused(run.processed, run.total, isDownload)
+                    updateNotificationPaused(if (isDownload) run.processed else run.succeeded, run.total, isDownload)
                 }
             }
             // WorkManager ignores the result of a stopped worker and reschedules it unless it was cancelled.
@@ -253,27 +262,49 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
 
             val record = queue[index]
             val position = index + 1
-            val percentage = ((position.toFloat() / queue.size.toFloat()) * 100).toInt()
-            showProgress(percentage, position, queue.size, isDownload)
-            BackgroundSyncPlugin.sendProgressUpdate(progressEvent, percentage, position, queue.size)
+            if (isDownload) {
+                // Downloads: progress before each attempt, with the item's position (both platforms).
+                val total = queue.size - run.skipped
+                val percentage = ((position.toFloat() / total.toFloat()) * 100).toInt()
+                showProgress(percentage, position, total, isDownload)
+                BackgroundSyncPlugin.sendProgressUpdate(progressEvent, percentage, position, total)
+            }
 
             attempted.add(record.id)
             val result = process(record)
             if (result.skipped) {
                 // Removed from the queue (removeRecords/clearQueue) after this run loaded it.
                 logD("Record ${record.id} is no longer in the queue, skipped")
+                run.skipped++
+                run.total = queue.size - run.skipped
                 index++
                 continue
             }
+            val total = queue.size - run.skipped
             val error = result.error
             if (error == null) {
                 run.processed++
+                run.succeeded++
                 networkWaits = 0
                 index++
+                if (!isDownload) {
+                    // Uploads: progress after each successful upload, with the number of records
+                    // sent so far (1..N), the same as iOS. The notification shows the same count.
+                    val percentage = ((run.succeeded.toFloat() / total.toFloat()) * 100).toInt()
+                    showProgress(percentage, run.succeeded, total, isDownload)
+                    BackgroundSyncPlugin.sendProgressUpdate(progressEvent, percentage, run.succeeded, total)
+                }
                 continue
             }
 
-            BackgroundSyncPlugin.sendProgressUpdate(failedEvent, percentage, position - 1, queue.size, error)
+            if (isDownload) {
+                val percentage = ((position.toFloat() / total.toFloat()) * 100).toInt()
+                BackgroundSyncPlugin.sendProgressUpdate(failedEvent, percentage, position - 1, total, error)
+            } else {
+                // completedCount = records sent so far, as on iOS.
+                val percentage = (((run.succeeded + 1).toFloat() / total.toFloat()) * 100).toInt()
+                BackgroundSyncPlugin.sendProgressUpdate(failedEvent, percentage, run.succeeded, total, error)
+            }
             run.lastError = error
             if (!result.connectivityFailure) {
                 // The server answered and rejected this item. It is marked failed and stays in
@@ -287,7 +318,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
             if (!isStopped && networkWaits < MAX_NETWORK_WAITS_PER_ITEM && !hasUsableNetwork()) {
                 networkWaits++
                 logI("Connection lost. Waiting up to ${NETWORK_WAIT_MS / 1000}s for the network before retrying ${record.id}")
-                showWaitingForNetwork(position - 1, queue.size, isDownload)
+                showWaitingForNetwork(if (isDownload) position - 1 else run.succeeded, total, isDownload)
                 if (waitForNetwork(NETWORK_WAIT_MS)) {
                     logI("Network is back, retrying ${record.id}")
                     continue
@@ -1136,6 +1167,8 @@ enum class QueueOutcome { DONE, STOPPED, NETWORK }
 class QueueRun(
     var total: Int,
     var processed: Int = 0,
+    var succeeded: Int = 0,
+    var skipped: Int = 0,
     var failed: Int = 0,
     var lastError: String? = null,
     var outcome: QueueOutcome = QueueOutcome.DONE
