@@ -4,7 +4,7 @@ A realistic demo of the Background Sync plugin, built for the article and video
 about its first real project: an audit app where auditors photograph every
 finding at an industrial site, and the photos are most of what syncs.
 
-- **Fieldbook** (`app/`): a Capacitor app for Android with one large audit
+- **Fieldbook** (`app/`): a Capacitor app for Android and iOS with one large audit
   (42 findings, 336 photos, 418.2 MB) and two small, already synced ones.
   Tapping **Sync** puts one record per photo into the plugin queue with
   `enqueueRecord` (id, JSON payload, endpoint, `filePath`) and calls
@@ -57,6 +57,70 @@ scripts/reset-device.sh && curl -X POST localhost:8791/api/reset
 `seed-device.sh` copies the photos through `/data/local/tmp` with `run-as`,
 because files that `adb push` writes into `Android/data` belong to the shell
 user and the app cannot read them.
+
+## Run it on the iOS simulator
+
+Requirements: Xcode with an iOS simulator runtime (tested with Xcode 26.6 on
+an iPhone 17 Pro simulator, iOS 26.5), CocoaPods (tested with 1.16), and the
+photos from step 1 above.
+
+```sh
+# Backoffice: the simulator shares the Mac's network, so the app reaches it
+# at http://localhost:8791
+node backoffice/server.mjs
+
+# Build (vite, cap sync ios with pod install, xcodebuild), then boot the
+# simulator, install the app and copy the photos into its Documents dir
+scripts/ios-build.sh
+scripts/ios-seed.sh
+xcrun simctl launch booted com.hfps.fieldaudit
+
+# Back to "not synced" (photos stay)
+scripts/ios-reset.sh && curl -X POST localhost:8791/api/reset
+```
+
+`SIM_DEVICE="iPhone 17 Pro Max"` or `SIM_UDID=<udid>` picks another
+simulator, and `BACKOFFICE_PORT` another port (the app is built for it). The
+iOS project uses CocoaPods because the plugin's SQLCipher dependency is a pod.
+The app asks for notification permission on its first start.
+
+On iOS the whole audit took 7 s on the simulator, which uploads over the Mac's
+loopback; use the ingest cap (`RATE_MBPS`, below) to see a run at phone
+speed.
+
+### What the iOS simulator can and cannot show
+
+The plugin runs the iOS queue in a `UIApplication` background task, not in a
+`BGTaskScheduler` task or a background `NSURLSession`. What that means, and
+what the simulator can show of it:
+
+- **Foreground:** iOS behaves like Android. Shown and measured on the
+  simulator.
+- **Background:** after Home, uploads went on for 30 to 35 s, then stopped
+  (21 photos on the server when the app left, 93 at 30 s, still 93 at 90 s).
+  Nothing was lost: back in the foreground the queue resumed on its own within
+  2 s and finished 336 of 336. The simulator enforces this background window,
+  so the behaviour is real; a device can grant less time, and the screen lock,
+  which `simctl` cannot trigger, is the same situation for the app as Home.
+- **App closed:** `simctl terminate` stops the queue at once (61 of 336 on
+  the server, still 61 five seconds later). After relaunch the 61 rows are
+  `completed`, the rest `pending`, and the next Sync continues where it
+  stopped, with no loss and no duplicates. Unlike Android, nothing restarts the
+  queue until the app runs and calls `sync()`.
+- **Network loss:** the simulator has no airplane mode and does not change
+  `navigator.onLine`, so the tests cut the connection with a proxy between the
+  app and the backoffice. The upload in flight fails, the run stops, and the
+  plugin retries on its own (10 s, then doubling) while the app is open: the
+  queue resumed 18 s after the server came back. On a device, the WebView's
+  `online` event also restarts it at once.
+- **Not shown by the simulator:** real radio conditions (cellular, Wi-Fi
+  handover, throughput), memory pressure and jetsam limits (memory was measured
+  with `footprint` instead), Low Power Mode, and anything `BGTaskScheduler`
+  would do (the plugin does not use it, and the simulator does not run such
+  tasks by itself).
+
+The automated tests behind these numbers, and how to run them, are in
+[tests/ios](tests/ios/README.md).
 
 ## How long a sync takes, and why
 
@@ -144,9 +208,29 @@ the plugin (for example an expedited request, or catching
 `ForegroundServiceStartNotAllowedException` and posting the progress with
 `NotificationManager` directly), not in this demo.
 
+## What was verified on iOS
+
+Against this branch's plugin on the iPhone 17 Pro simulator (iOS 26.5), with
+the cases in [tests/ios](tests/ios/README.md), server-side md5 sums, the
+plugin's queue database and its listener events:
+
+- Full audit: 336 of 336 photos and 418,184,992 bytes on the server, md5
+  identical to the seeded files, 336 rows `completed`, one `onStarted`, 336
+  `onProgress` (counts 1 to 336 in order), one `onCompleted`, app memory 51
+  to 56 MB.
+- Background, termination and network loss: as described above, with no
+  record lost and at most the one in-flight photo sent twice.
+- Per-item HTTP 500 and 413, cancel and resume, removal during a run,
+  duplicate ids, `sync()` during a run, downloads, presigned uploads,
+  `executeRawQuery`, `encryptDatabase`, `autoDeleteCompleted`, 20 and 70 MB
+  files, and the Database Inspector: all pass. The bugs these cases found in
+  the plugin's iOS code are fixed on this branch.
+
 ## Screenshots
 
 ![Audit list, audit detail and photo grid](docs/screenshots/phone-audit.png)
 ![Sync running, offline, progress notification frozen after a background retry, done](docs/screenshots/phone-sync.png)
 ![Backoffice during the sync](docs/screenshots/backoffice-live.png)
 ![Backoffice with every photo received](docs/screenshots/backoffice-done.png)
+![iOS: audit list, audit detail, notification prompt](docs/screenshots/ios-audit.png)
+![iOS: sync running, done, Database Inspector](docs/screenshots/ios-sync.png)
