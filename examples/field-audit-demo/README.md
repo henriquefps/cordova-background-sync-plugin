@@ -102,8 +102,8 @@ what the simulator can show of it:
   2 s and finished 336 of 336. The simulator enforces this background window,
   so the behaviour is real; a device can grant less time, and the screen lock,
   which `simctl` cannot trigger, is the same situation for the app as Home.
-- **App closed:** `simctl terminate` stops the queue at once (61 of 336 on
-  the server, still 61 five seconds later). After relaunch the 61 rows are
+- **App closed:** `simctl terminate` stops the queue at once (62 of 336 on
+  the server, still 62 five seconds later). After relaunch the 62 rows are
   `completed`, the rest `pending`, and the next Sync continues where it
   stopped, with no loss and no duplicates. Unlike Android, nothing restarts the
   queue until the app runs and calls `sync()`.
