@@ -12,7 +12,7 @@ Select one of the topics below to learn more:
 Step-by-step walkthrough of how to integrate the sync queue table, initialize the plugin, write event listeners, and apply decoupled progress updates.
 
 ### 2. [Bypassing the 60s WebView Timeout](bypassing-timeouts.md)
-Learn how the plugin delegates upload requests to native operating system layers (Android WorkManager and iOS Background Tasks) to bypass the standard 60-second hybrid browser execution limits.
+Learn how the plugin delegates upload requests to native operating system layers (Android WorkManager, and on iOS a `UIApplication` background task that lasts about 30 seconds after the app leaves the foreground) to bypass the standard 60-second hybrid browser execution limits.
 
 ### 3. [Technical Plugin Limitations & Per-Record Limits](limitations.md)
 Read about operating system restrictions, SQLite auto-discovery mechanics, and critical limits on RAM consumption (especially on iOS for large media files) to prevent application crashes.

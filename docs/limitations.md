@@ -15,11 +15,16 @@ The plugin no longer attempts to auto-discover or write to the OutSystems applic
 * Developers must use the plugin's JavaScript API (`enqueueRecord`, `getQueuedRecords`, etc.) to interface with this database instead of executing direct SQL inserts/queries on OutSystems entities.
 
 ### 3. iOS Background Life-cycle
-The upload loop runs inside a native background task (`beginBackgroundTaskWithName:`), not in a `BGTaskScheduler` task or a background `NSURLSession`. In practice:
-* **Foreground:** the queue runs like on Android.
-* **App in the background or device locked:** iOS grants about 30 seconds. On the iOS 26 simulator, uploads went on for 30 to 35 seconds after Home, then stopped. When the time runs out, the plugin stops at the next record (the record in flight finishes when the app runs again) and posts the "Sync paused" notification. Nothing is lost: the remaining records stay `pending`, and the run resumes on its own as soon as the app is in the foreground again.
-* **App closed (swiped away or killed):** the queue stops with the process. Completed records stay completed; the next `sync()` continues with the rest. At most the record that was in flight when the app died is sent again.
+On iOS the sync runs in a `UIApplication` background task (`beginBackgroundTaskWithName:`). The plugin does not use `BGTaskScheduler`, background fetch or a background `NSURLSession`, and it declares no `UIBackgroundModes`. In practice:
+* **Foreground:** the queue runs for as long as it needs, like on Android.
+* **App in the background or device locked:** the sync continues for the short window iOS grants, about 30 seconds (30 to 35 seconds measured on the iOS 26 simulator). When the window ends, the plugin stops at the next record (the record in flight finishes when the app runs again) and posts the "Sync paused" notification.
+* **Resume:** the run resumes on its own when the app returns to the foreground, or when the app calls `sync()`. Nothing is lost: records not yet sent stay `pending`.
+* **App closed (swiped away or killed):** the queue stops with the process. Completed records stay completed, and the next `sync()` continues with the rest. At most the record that was in flight when the app died is sent again.
 * Unlike Android's WorkManager, nothing restarts the queue while the app is not running.
+
+> [!NOTE]
+> **Migration: background modes removed**
+> Up to 1.0.4, the plugin's `plugin.xml` added the iOS background modes `fetch` and `processing` to the app's `Info.plist`, although its iOS code used neither. They are no longer added. If your app uses them for its own code (a background fetch handler or `BGTaskScheduler` tasks), declare them in your app yourself, with `BGTaskSchedulerPermittedIdentifiers` for `processing`. Capacitor apps are not affected: Capacitor never applied these plugin entries.
 
 > [!NOTE]
 > **Memory use (iOS)**

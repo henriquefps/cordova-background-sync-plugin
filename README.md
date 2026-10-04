@@ -2,7 +2,7 @@
 
 A professional, high-resilience **Background Data & Asset Synchronization Engine** designed for hybrid mobile applications (Cordova, Capacitor) using local SQLite/LocalStorage databases.
 
-This plugin delegates the synchronization of offline relational records and heavy binary assets (images, PDFs, videos) to the **native operating system layer (Kotlin on Android / Objective-C on iOS)**. It operates entirely in the background, bypassing the WebView (JavaScript runtime) suspension limits, ensuring that your data sync is unbreakable even when the app is closed, minimized, or the device is locked.
+This plugin delegates the synchronization of offline relational records and heavy binary assets (images, PDFs, videos) to the **native operating system layer (Kotlin on Android / Objective-C on iOS)**. It runs outside the WebView (JavaScript runtime), so WebView suspension does not stop it. On Android it keeps going when the app is closed, minimized, or the device is locked. On iOS it runs while the app is in the foreground and for the short background window iOS grants (about 30 seconds), then pauses and resumes when the app returns or calls `sync()`, with nothing lost (see [Technical Limitations](docs/limitations.md#3-ios-background-life-cycle)). The plugin declares no iOS background modes.
 
 ---
 

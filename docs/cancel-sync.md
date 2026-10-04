@@ -68,6 +68,7 @@ syncEngine.registerListeners({
 ### iOS notes
 * The cancellation takes effect between records: the record being sent when `cancelSync()` is called finishes first (on the simulator, `onFailed` arrived within 100 ms and no further upload started).
 * `cancelSync()` also stops the automatic retry after a connectivity error and the automatic resume when the app returns to the foreground (see [Retry Policy](retry-policy.md)).
+* A run that paused because the iOS background window ended is not a cancellation: it resumes when the app returns to the foreground or calls `sync()`.
 * Calling `sync()` while a run is active does not cancel or restart it: the running run also takes the records queued since it started. Calling `sync()` right after `cancelSync()` starts a new run as soon as the cancelled one has stopped.
 
 ---

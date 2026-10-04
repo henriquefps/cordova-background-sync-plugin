@@ -13,7 +13,7 @@ When building offline-first systems, downloading the entire database is ineffici
 3. **Queue Downloads**:
    - For metadata payloads: Enqueue requests using `REST_PAYLOAD` strategy.
    - For attachments: Enqueue requests using `BINARY_FILE` strategy.
-4. **Processing**: The background engine automatically retrieves JSON files, stores them in the encrypted local database, and streams binary files to safe sandbox directories.
+4. **Processing**: The background engine automatically retrieves JSON files, stores them in the encrypted local database, and streams binary files to safe sandbox directories. On iOS, downloads run in the same run as uploads: in the foreground, then for about 30 seconds after the app leaves it; a pending download resumes when the app returns or calls `sync()` (see [Technical Limitations](limitations.md#3-ios-background-life-cycle)).
 5. **UI Integration**: Once downloads complete, parse JSON metadata changes, update local UI databases, and reference local paths for offline media.
 
 ---

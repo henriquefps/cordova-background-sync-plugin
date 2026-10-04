@@ -224,10 +224,13 @@ syncEngine.clearQueue(
 
 ### 1. OutSystems Mobile Setup
 
-Since the plugin's [plugin.xml](file:///../plugin.xml) automatically injects the required iOS background modes (`fetch` and `processing`) and Android permissions into the generated native packages, **no manual configuration of background capabilities is required** inside OutSystems.
+The plugin's [plugin.xml](file:///../plugin.xml) adds the Android permissions it needs to the generated native packages, so **no manual configuration of background capabilities is required** inside OutSystems. On iOS no background mode is needed: the sync runs in a `UIApplication` background task, which iOS grants without any `UIBackgroundModes` entry. It runs while the app is in the foreground, continues for about 30 seconds after the app leaves it, then pauses and resumes when the app returns or calls `sync()` (see [Technical Limitations](limitations.md#3-ios-background-life-cycle)).
 
 > [!NOTE]
-> **Capacitor (iOS):** Capacitor does not apply the plugin's `Info.plist` entries (`UIBackgroundModes`, `NSLocalNetworkUsageDescription`). The iOS sync does not need them: it runs in a `UIApplication` background task, which requires no background mode. Add `NSLocalNetworkUsageDescription` yourself only if your server is on the local network, and an App Transport Security exception if it is plain `http`.
+> **No more iOS background modes:** versions up to 1.0.4 added `fetch` and `processing` to `UIBackgroundModes`, unused by the plugin. If your app relied on that for its own code, declare those modes in your app.
+
+> [!NOTE]
+> **Capacitor (iOS):** Capacitor does not apply the plugin's `Info.plist` entries (here, `NSLocalNetworkUsageDescription`). Add `NSLocalNetworkUsageDescription` yourself only if your server is on the local network, and an App Transport Security exception if it is plain `http`.
 
 You only need to reference the plugin's Git repository in your OutSystems module's **Extensibility Configurations**:
 
