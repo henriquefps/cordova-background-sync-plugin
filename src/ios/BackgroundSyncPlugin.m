@@ -300,13 +300,19 @@ static id BSSyncArgument(CDVInvokedUrlCommand *command, NSUInteger index) {
 }
 
 - (void)executeRawQuery:(CDVInvokedUrlCommand *)command {
-  NSString *query = [command.arguments objectAtIndex:0];
-  NSArray *queryArgs = [command.arguments objectAtIndex:1];
+  NSString *query = BSSyncString(BSSyncArgument(command, 0));
+  id argsArg = BSSyncArgument(command, 1);
+  NSArray *queryArgs = [argsArg isKindOfClass:[NSArray class]] ? argsArg : @[];
 
   __weak BackgroundSyncPlugin *weakSelf = self;
   [self.commandDelegate runInBackground:^{
     BackgroundSyncPlugin *strongSelf = weakSelf;
     if (!strongSelf) return;
+
+    if (query.length == 0) {
+      [strongSelf sendErrorResult:@"Database execution error: query is required." command:command];
+      return;
+    }
 
     sqlite3 *db = [strongSelf openWritableDatabase];
     if (!db) {
@@ -315,52 +321,58 @@ static id BSSyncArgument(CDVInvokedUrlCommand *command, NSUInteger index) {
     }
 
     sqlite3_stmt *stmt;
-    if (sqlite3_prepare_v2(db, [query UTF8String], -1, &stmt, NULL) == SQLITE_OK) {
-      for (int i = 0; i < queryArgs.count; i++) {
-        id arg = [queryArgs objectAtIndex:i];
-        if ([arg isKindOfClass:[NSNull class]] || arg == nil) {
-          sqlite3_bind_null(stmt, i + 1);
-        } else {
-          NSString *argStr = [NSString stringWithFormat:@"%@", arg];
-          sqlite3_bind_text(stmt, i + 1, [argStr UTF8String], -1, SQLITE_TRANSIENT);
-        }
-      }
-
-      NSString *trimmedQuery = [query stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]].lowercaseString;
-      if ([trimmedQuery hasPrefix:@"select"]) {
-        NSMutableArray *resultList = [NSMutableArray array];
-        while (sqlite3_step(stmt) == SQLITE_ROW) {
-          NSMutableDictionary *row = [NSMutableDictionary dictionary];
-          int columnCount = sqlite3_column_count(stmt);
-          for (int i = 0; i < columnCount; i++) {
-            NSString *colName = [NSString stringWithUTF8String:sqlite3_column_name(stmt, i)];
-            const char *valChar = (char *)sqlite3_column_text(stmt, i);
-            NSString *colVal = valChar ? [NSString stringWithUTF8String:valChar] : @"";
-            row[colName] = colVal;
-          }
-          [resultList addObject:row];
-        }
-        sqlite3_finalize(stmt);
-        sqlite3_close(db);
-        CDVPluginResult *result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsArray:resultList];
-        [strongSelf.commandDelegate sendPluginResult:result callbackId:command.callbackId];
-      } else {
-        sqlite3_step(stmt);
-        sqlite3_finalize(stmt);
-        sqlite3_close(db);
-        CDVPluginResult *result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"Query executed successfully."];
-        [strongSelf.commandDelegate sendPluginResult:result callbackId:command.callbackId];
-      }
-    } else {
-      const char *errMsg = sqlite3_errmsg(db);
+    if (sqlite3_prepare_v2(db, [query UTF8String], -1, &stmt, NULL) != SQLITE_OK) {
+      // Copy the message before sqlite3_close frees it.
+      NSString *message = [NSString stringWithFormat:@"SQL Prepare Error: %s", sqlite3_errmsg(db)];
       sqlite3_close(db);
-      [strongSelf sendErrorResult:[NSString stringWithFormat:@"SQL Prepare Error: %s", errMsg] command:command];
+      [strongSelf sendErrorResult:message command:command];
+      return;
     }
+
+    for (int i = 0; i < (int)queryArgs.count; i++) {
+      id arg = queryArgs[i];
+      NSString *argStr = BSSyncString(arg) ?: ([arg isKindOfClass:[NSNull class]] ? nil : [NSString stringWithFormat:@"%@", arg]);
+      if (argStr) {
+        sqlite3_bind_text(stmt, i + 1, [argStr UTF8String], -1, SQLITE_TRANSIENT);
+      } else {
+        sqlite3_bind_null(stmt, i + 1);
+      }
+    }
+
+    // Any statement that produces columns (SELECT, PRAGMA, WITH ..., RETURNING) returns its
+    // rows, as on Android for SELECT/PRAGMA; everything else returns a confirmation string.
+    // A failing step (constraint violation, read-only table, ...) is reported as an error
+    // instead of being swallowed.
+    int columnCount = sqlite3_column_count(stmt);
+    NSMutableArray *resultList = [NSMutableArray array];
+    int rc;
+    while ((rc = sqlite3_step(stmt)) == SQLITE_ROW) {
+      NSMutableDictionary *row = [NSMutableDictionary dictionary];
+      for (int i = 0; i < columnCount; i++) {
+        NSString *colName = [NSString stringWithUTF8String:sqlite3_column_name(stmt, i)];
+        const char *valChar = (const char *)sqlite3_column_text(stmt, i);
+        row[colName] = valChar ? [NSString stringWithUTF8String:valChar] : @"";
+      }
+      [resultList addObject:row];
+    }
+    NSString *stepError = rc == SQLITE_DONE ? nil : [NSString stringWithFormat:@"Database execution error: %s", sqlite3_errmsg(db)];
+    sqlite3_finalize(stmt);
+    sqlite3_close(db);
+
+    CDVPluginResult *result;
+    if (stepError) {
+      result = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:stepError];
+    } else if (columnCount > 0) {
+      result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsArray:resultList];
+    } else {
+      result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"Query executed successfully."];
+    }
+    [strongSelf.commandDelegate sendPluginResult:result callbackId:command.callbackId];
   }];
 }
 
 - (void)enqueueRecord:(CDVInvokedUrlCommand *)command {
-  NSDictionary *record = [command.arguments objectAtIndex:0];
+  NSDictionary *record = BSSyncDictionary(BSSyncArgument(command, 0)) ?: @{};
   
   __weak BackgroundSyncPlugin *weakSelf = self;
   [self.commandDelegate runInBackground:^{
