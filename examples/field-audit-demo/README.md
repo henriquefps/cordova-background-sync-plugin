@@ -139,10 +139,20 @@ W/BackgroundSyncPlugin: Failed to update Foreground Service progress notificatio
 From then on the notification is frozen. In the recorded run it stayed at
 `Photo 76 of 312 (24%)` for 2 minutes 20 seconds while the server went from
 101 to 334 photos, until the success notification replaced it. The take
-`04-offline` therefore cuts the connection with the app open. A fix belongs in
-the plugin (for example an expedited request, or catching
-`ForegroundServiceStartNotAllowedException` and posting the progress with
-`NotificationManager` directly), not in this demo.
+`04-offline` therefore cuts the connection with the app open.
+
+The plugin's Android side now posts the progress with `NotificationManager`
+directly, so it keeps advancing in that case (an expedited request was tried
+and does not help); see [docs/notifications.md](../../docs/notifications.md).
+`tests/notification-background.mjs` reproduces the scenario, and
+[tests/RESULTS-android.md](tests/RESULTS-android.md) has the before/after
+evidence and the full Android test matrix.
+
+## Tests
+
+[tests/](tests/README.md) has scripted Android tests that drive the plugin
+inside this app over adb and the WebView's DevTools protocol, with fault
+injection in the backoffice (HTTP errors, slow, dropped and hung requests).
 
 ## Screenshots
 
