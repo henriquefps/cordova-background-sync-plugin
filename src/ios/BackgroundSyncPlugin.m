@@ -173,6 +173,20 @@ static id BSSyncArgument(CDVInvokedUrlCommand *command, NSUInteger index) {
 
 // Secure Keychain operations to get or generate the encryption passphrase
 - (NSString *)getOrCreatePassphrase {
+  // Cached for the process: every plugin call opens the database, and a keychain round trip
+  // per open is needless. If storing a new passphrase fails, the next open would otherwise
+  // generate yet another one and fail to read (and so recreate) the database every time.
+  static NSString *cachedPassphrase = nil;
+  static dispatch_once_t once;
+  static NSObject *lock;
+  dispatch_once(&once, ^{ lock = [NSObject new]; });
+  @synchronized (lock) {
+    if (!cachedPassphrase) cachedPassphrase = [self readOrCreateKeychainPassphrase];
+    return cachedPassphrase;
+  }
+}
+
+- (NSString *)readOrCreateKeychainPassphrase {
   NSString *serviceName = @"com.hfps.backgroundsync.passphrase";
   NSString *accountName = @"bgSyncDbKey";
   
@@ -202,7 +216,17 @@ static id BSSyncArgument(CDVInvokedUrlCommand *command, NSUInteger index) {
     (__bridge id)kSecAttrAccessible: (__bridge id)kSecAttrAccessibleAfterFirstUnlock
   };
   
-  SecItemAdd((__bridge CFDictionaryRef)attributes, NULL);
+  OSStatus addStatus = SecItemAdd((__bridge CFDictionaryRef)attributes, NULL);
+  if (addStatus == errSecDuplicateItem) {
+    // Another thread stored one first: use that.
+    resultRef = NULL;
+    if (SecItemCopyMatching((__bridge CFDictionaryRef)query, &resultRef) == errSecSuccess) {
+      NSData *resultData = (__bridge_transfer NSData *)resultRef;
+      return [[NSString alloc] initWithData:resultData encoding:NSUTF8StringEncoding];
+    }
+  } else if (addStatus != errSecSuccess) {
+    LogDebug(@"[BG-SYNC-IOS] Could not store the database passphrase in the keychain (OSStatus %d); it lasts until the app exits.", (int)addStatus);
+  }
   return uuid;
 }
 
@@ -234,8 +258,15 @@ static id BSSyncArgument(CDVInvokedUrlCommand *command, NSUInteger index) {
     sqlite3_key(db, [key UTF8String], (int)[key length]);
   }
   
-  sqlite3_stmt *stmt;
-  if (sqlite3_prepare_v2(db, "PRAGMA user_version;", -1, &stmt, NULL) != SQLITE_OK) {
+  // Probe that the current key (or no key) can actually read the file. Preparing a PRAGMA
+  // never touches page 1, so it succeeded even when SQLCipher could not decrypt the file and
+  // every later statement then failed with "out of memory" (SQLITE_NOMEM, SQLCipher's codec
+  // error); stepping a read of sqlite_master does read page 1.
+  sqlite3_stmt *stmt = NULL;
+  BOOL readable = sqlite3_prepare_v2(db, "SELECT count(*) FROM sqlite_master;", -1, &stmt, NULL) == SQLITE_OK &&
+                  sqlite3_step(stmt) == SQLITE_ROW;
+  if (stmt) sqlite3_finalize(stmt);
+  if (!readable) {
     sqlite3_close(db);
 
     // Best-effort visibility: this wipes any unsynchronized queued records with no
@@ -258,8 +289,6 @@ static id BSSyncArgument(CDVInvokedUrlCommand *command, NSUInteger index) {
       NSString *key = [self getOrCreatePassphrase];
       sqlite3_key(db, [key UTF8String], (int)[key length]);
     }
-  } else {
-    sqlite3_finalize(stmt);
   }
   
   char *errMsg = NULL;
