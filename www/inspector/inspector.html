@@ -176,6 +176,10 @@
   }
   table {
     width: 100%;
+    /* On a phone the wrapper is about 300px wide. Without a minimum the nine columns were
+       squeezed to about 70px each and break-all wrapped every path and payload into rows
+       of 600px or more; keep columns readable and scroll the wrapper sideways instead. */
+    min-width: 960px;
     border-collapse: collapse;
     font-size: 0.8rem;
   }
@@ -198,6 +202,7 @@
   }
   td.id-cell { display: flex; align-items: baseline; gap: 0.35rem; }
   td.wrap-cell {
+    min-width: 160px;
     max-width: 260px;
     overflow-wrap: break-word;
     word-break: break-all;
@@ -630,7 +635,7 @@
         '<td>' + statusBadge(row.Status) + '</td>' +
         '<td class="wrap-cell">' + esc(row.Endpoint) + '</td>' +
         '<td>' + esc(row.UploadStrategy) + '</td>' +
-        '<td class="wrap-cell">' + esc(row.FilePath) + '</td>' +
+        '<td class="wrap-cell"><pre>' + esc(row.FilePath) + '</pre></td>' +
         '<td class="wrap-cell">' + cellWithField(row.Payload, row.Id, 'Payload') + '</td>' +
         '<td class="wrap-cell">' + cellWithField(row.Error, row.Id, 'Error') + '</td>' +
         '<td><div class="row-actions">' +
@@ -712,7 +717,7 @@
         '<td>' + statusBadge(row.Status) + '</td>' +
         '<td class="wrap-cell">' + esc(row.Endpoint) + '</td>' +
         '<td>' + esc(row.DownloadStrategy) + '</td>' +
-        '<td class="wrap-cell">' + esc(row.FilePath) + '</td>' +
+        '<td class="wrap-cell"><pre>' + esc(row.FilePath) + '</pre></td>' +
         '<td class="wrap-cell">' + cellWithField(row.ResponseData, row.Id, 'ResponseData') + '</td>' +
         '<td class="wrap-cell">' + cellWithField(row.Error, row.Id, 'Error') + '</td>' +
         '<td><div class="row-actions">' +
