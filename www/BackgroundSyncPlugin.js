@@ -116,8 +116,13 @@ var BackgroundSyncPlugin = {
                         return c.toUpperCase();
                     });
                     var eventName = 'on' + camelCased.charAt(0).toUpperCase() + camelCased.slice(1);
-                    if (self.listeners[eventName]) {
-                        self.listeners[eventName](eventData);
+                    // The documented names keep the underscore (onStarted_download,
+                    // onProgress_download, onFailed_download); the camelCase form
+                    // (onStartedDownload, ...) is still honoured for existing apps.
+                    var documentedName = 'on' + eventData.event.charAt(0).toUpperCase() + eventData.event.slice(1);
+                    var listener = self.listeners[documentedName] || self.listeners[eventName];
+                    if (listener) {
+                        listener(eventData);
                     }
                     // For backward compatibility, if progressCallback is registered and it's a progress event
                     if (eventData.event === 'progress' && self.progressCallback) {
