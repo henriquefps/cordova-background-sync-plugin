@@ -57,7 +57,7 @@ The upload flow moves offline-captured data from the device to the OutSystems ba
 sequenceDiagram
     participant App as WebView / OutSystems JS
     participant DB as bg_sync.db (sync_queue)
-    participant Worker as Native Sync Worker<br/>(WorkManager / BGTaskScheduler)
+    participant Worker as Native Sync Worker<br/>(WorkManager / iOS background task)
     participant Backend as OutSystems REST API
 
     App->>DB: enqueueRecord({ endpoint, payload, filePath, uploadStrategy })
@@ -99,7 +99,7 @@ The download flow retrieves server-side updates (JSON deltas and binary files) i
 sequenceDiagram
     participant App as WebView / OutSystems JS
     participant DB as bg_sync.db (download_queue)
-    participant Worker as Native Sync Worker<br/>(WorkManager / BGTaskScheduler)
+    participant Worker as Native Sync Worker<br/>(WorkManager / iOS background task)
     participant Backend as OutSystems REST API / CDN
 
     App->>DB: enqueueDownload({ endpoint, payload, downloadStrategy, filePath? })
@@ -128,7 +128,7 @@ sequenceDiagram
 
     App->>DB: getCompletedDownloads()
     DB-->>App: [{ id, responseData, filePath }]
-    Note over DB: If autoDeleteCompleted = true,<br/>records are deleted after retrieval.<br/>This flag has NO effect on sync_queue (uploads) —<br/>see cancel-sync.md.
+    Note over DB: If autoDeleteCompleted = true,<br/>records are deleted after retrieval.<br/>(Uploads are deleted as soon as they are sent.)
     App->>App: Parse JSON delta / reference local file path
 ```
 
@@ -140,7 +140,7 @@ sequenceDiagram
 - `BINARY_FILE` downloads stream the content directly to a sandboxed device path — ideal for images, PDFs, and video.
 - `onFailed_download` (not pictured) fires instead of the loop continuing on a non-transient error or `cancelSync()`, mirroring the upload loop.
 - **`onCompleted` fires once per `sync()` run, after BOTH queues are drained** — not once per queue. There is no `onCompleted_download`. Full event reference: [Integration Guide → Register Progress Listeners](integration-guide.md#step-2-register-progress-listeners).
-- The app calls `getCompletedDownloads()` to consume results. If `autoDeleteCompleted` is `true`, records are atomically deleted after being returned, and any `offset` passed in is ignored (always reads from the front of what's left) — **this only applies to `download_queue`**; completed uploads (`getSyncedRecords`) are never auto-deleted, see [cancel-sync.md](cancel-sync.md#step-1-managing-completed-uploads).
+- The app calls `getCompletedDownloads()` to consume results. If `autoDeleteCompleted` is `true`, records are atomically deleted after being returned, and any `offset` passed in is ignored (always reads from the front of what's left). For uploads the same flag deletes each record as soon as it is sent, so `getSyncedRecords()` then returns nothing; see [cancel-sync.md](cancel-sync.md#step-1-managing-completed-uploads).
 - Auth headers configured in `initialize()` are automatically forwarded on every download request.
 
 ---

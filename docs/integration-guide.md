@@ -50,7 +50,7 @@ if (syncEngine) {
             syncOnlyOnWifi: false,                     // Android: require Wi-Fi
             syncOnlyWhenCharging: false,               // Android: require charger
             enableNotifications: true,                 // Show native progress notifications
-            autoDeleteCompleted: true,                // Auto-deletes completed DOWNLOADS only — see note below
+            autoDeleteCompleted: true,                // Deletes uploads when sent, downloads when read; see note below
             encryptDatabase: true,                     // Enable SQLCipher encryption (Keystore/Keychain)
             headers: {
                 "Authorization": "Bearer eyJhbGciOi...",
@@ -78,7 +78,9 @@ if (syncEngine) {
 ```
 
 > [!NOTE]
-> **`autoDeleteCompleted` only affects `download_queue`.** When `true`, `getCompletedDownloads()` deletes each record it returns (see [Background Downloads Guide](background-downloads.md)). It has **no effect on `sync_queue`** — completed uploads always persist until you explicitly call `removeRecords()`, regardless of this setting. See [Manually Cancelling Synchronization → Managing Completed Uploads](cancel-sync.md#step-1-managing-completed-uploads) for the cleanup pattern this implies.
+> **`autoDeleteCompleted` affects both queues, at different moments** (same behaviour on Android and iOS).
+> * **Uploads (`sync_queue`):** when `true`, a record is deleted as soon as its upload succeeds, so `getSyncedRecords()` returns an empty list and there is nothing to clean up. When `false`, completed uploads stay in the queue with status `completed` until you call `removeRecords()` or `clearQueue()` (see [Managing Completed Uploads](cancel-sync.md#step-1-managing-completed-uploads)).
+> * **Downloads (`download_queue`):** when `true`, completed downloads stay in the queue until you read them, and `getCompletedDownloads()` deletes each record it returns (see [Background Downloads Guide](background-downloads.md)). When `false`, they stay until `removeDownloads()` or `clearDownloadQueue()`.
 
 ---
 
@@ -223,6 +225,9 @@ syncEngine.clearQueue(
 ### 1. OutSystems Mobile Setup
 
 Since the plugin's [plugin.xml](file:///../plugin.xml) automatically injects the required iOS background modes (`fetch` and `processing`) and Android permissions into the generated native packages, **no manual configuration of background capabilities is required** inside OutSystems.
+
+> [!NOTE]
+> **Capacitor (iOS):** Capacitor does not apply the plugin's `Info.plist` entries (`UIBackgroundModes`, `NSLocalNetworkUsageDescription`). The iOS sync does not need them: it runs in a `UIApplication` background task, which requires no background mode. Add `NSLocalNetworkUsageDescription` yourself only if your server is on the local network, and an App Transport Security exception if it is plain `http`.
 
 You only need to reference the plugin's Git repository in your OutSystems module's **Extensibility Configurations**:
 
