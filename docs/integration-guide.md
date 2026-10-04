@@ -90,13 +90,20 @@ Register event listeners to track the real-time background progress when the app
 
 | Event | Fires when | Payload |
 | :--- | :--- | :--- |
-| `onStarted` | The upload queue starts processing | `{ event, totalCount }` |
-| `onProgress` | Periodically during upload | `{ event, percentage, completedCount, totalCount }` |
-| `onFailed` | Upload sync suspended (network drop or `cancelSync()`) | `{ event, percentage, completedCount, totalCount, error }` |
-| `onStarted_download` | The download queue starts processing | `{ event, totalCount }` |
-| `onProgress_download` | Periodically during download | `{ event, percentage, completedCount, totalCount }` |
-| `onFailed_download` | Download sync suspended | `{ event, percentage, completedCount, totalCount, error }` |
+| `onStarted` | Once, when the upload queue starts processing | `{ event, totalCount }` |
+| `onProgress` | After each record is uploaded successfully | `{ event, percentage, completedCount, totalCount }` |
+| `onFailed` | For each record that fails, when a run stops on a network drop, and once on `cancelSync()` (error `"Synchronization cancelled by user"`) | `{ event, percentage, completedCount, totalCount, error }` |
+| `onStarted_download` | Once, when the download queue starts processing | `{ event, totalCount }` |
+| `onProgress_download` | Before each download starts | `{ event, percentage, completedCount, totalCount }` |
+| `onFailed_download` | For each download that fails | `{ event, percentage, completedCount, totalCount, error }` |
 | `onCompleted` | **Once**, after the entire run finishes (uploads *and* downloads) | `{ event, percentage, completedCount, totalCount }` |
+
+What the counts mean (the same on Android and iOS since 1.0.5):
+* **Uploads:** `completedCount` is the number of records sent so far in this run. `onProgress` fires after each successful upload, so it goes 1, 2, ... N; `onFailed` carries the number sent before the failure. A record removed from the queue during the run is left out of `totalCount`.
+* **Downloads:** `onProgress_download` fires before each download, with the position of the item being downloaded (1..N). `onFailed_download` carries the number downloaded so far.
+* **`onCompleted`:** `completedCount` is the number of items that succeeded (uploads plus downloads); `totalCount` is all items of the run, so `totalCount - completedCount` items failed and stay queued.
+
+Up to 1.0.4, Android fired `onProgress` before each upload with the position of the record being sent, and counted failed items in `onCompleted`.
 
 > [!IMPORTANT]
 > There is **no `onCompleted_download`**. Unlike the other three, `onCompleted` is not split per direction — it fires exactly once per `sync()` run, after both queues have been drained, with `completedCount`/`totalCount` covering uploads and downloads combined. Don't wait for a separate "downloads finished" signal; it doesn't exist.

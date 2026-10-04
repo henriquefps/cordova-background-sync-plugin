@@ -68,7 +68,7 @@ syncEngine.initialize({
 
 ### 2. Custom Translations & Texts
 You can define custom strings for titles and body texts using placeholders:
-* `{current}`: The index of the current item being processed.
+* `{current}`: For uploads, the number of records sent so far in the run; for downloads, the position of the item being downloaded.
 * `{total}`: The total number of items in the current sync queue.
 * `{percentage}`: The overall progress percentage (0 - 100).
 * `{error}`: The error description in case of failures.

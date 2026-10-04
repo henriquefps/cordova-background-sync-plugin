@@ -36,7 +36,7 @@ if (syncEngine) {
 ```
 
 ### Listening to the Cancellation Event
-When a cancellation occurs, the registered progress listener will receive an `onFailed` event with the specific error message `"Synchronization cancelled by user"`:
+When a cancellation stops a running sync, the registered progress listener receives one `onFailed` event with the specific error message `"Synchronization cancelled by user"` and `completedCount` set to the number of records sent before the cancellation (Android and iOS; Android 1.0.4 sent no event). No notification is posted for a cancellation. Calling `cancelSync()` when nothing is running sends no event, and on Android `enqueueSync()` during a run does not cancel it, so it sends none either:
 
 ```javascript
 syncEngine.registerListeners({

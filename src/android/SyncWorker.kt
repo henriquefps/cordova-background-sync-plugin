@@ -171,7 +171,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                     updateNotificationPartial(failed, total, downloads.lastError ?: uploads.lastError ?: "")
                 }
             }
-            BackgroundSyncPlugin.sendProgressUpdate("completed", 100, uploads.succeeded + downloads.processed, total)
+            BackgroundSyncPlugin.sendProgressUpdate("completed", 100, uploads.succeeded + downloads.succeeded, total)
             return Result.success()
         } finally {
             db.close()
@@ -187,11 +187,11 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
     private fun finishInterrupted(run: QueueRun, isDownload: Boolean, sentBefore: Int = 0, totalBefore: Int = 0): Result {
         if (run.outcome == QueueOutcome.STOPPED) {
             val reason = stopReasonCompat()
-            logI("Sync worker stopped by WorkManager (stop reason $reason) after ${if (isDownload) run.processed else run.succeeded} of ${run.total} items.")
+            logI("Sync worker stopped by WorkManager (stop reason $reason) after ${run.succeeded} of ${run.total} items.")
             if (reason == WorkInfo.STOP_REASON_CANCELLED_BY_APP) {
                 // cancelSync (enqueueSync no longer cancels a running worker). Same event as iOS,
                 // sent once per cancelled run, with the records sent so far.
-                val sent = sentBefore + if (isDownload) run.processed else run.succeeded
+                val sent = sentBefore + run.succeeded
                 val total = totalBefore + run.total
                 val percentage = if (total > 0) ((sent.toFloat() / total.toFloat()) * 100).toInt() else 0
                 BackgroundSyncPlugin.sendProgressUpdate("failed", percentage, sent, total, CANCELLED_MESSAGE)
@@ -202,7 +202,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                 // Any other reason (time limit, lost constraint, quota, ...) is a pause: WorkManager
                 // runs the work again on its own once the system allows it.
                 if (reason != WorkInfo.STOP_REASON_CANCELLED_BY_APP) {
-                    updateNotificationPaused(if (isDownload) run.processed else run.succeeded, run.total, isDownload)
+                    updateNotificationPaused(run.succeeded, run.total, isDownload)
                 }
             }
             // WorkManager ignores the result of a stopped worker and reschedules it unless it was cancelled.
@@ -299,7 +299,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
 
             if (isDownload) {
                 val percentage = ((position.toFloat() / total.toFloat()) * 100).toInt()
-                BackgroundSyncPlugin.sendProgressUpdate(failedEvent, percentage, position - 1, total, error)
+                BackgroundSyncPlugin.sendProgressUpdate(failedEvent, percentage, run.succeeded, total, error)
             } else {
                 // completedCount = records sent so far, as on iOS.
                 val percentage = (((run.succeeded + 1).toFloat() / total.toFloat()) * 100).toInt()
@@ -318,7 +318,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
             if (!isStopped && networkWaits < MAX_NETWORK_WAITS_PER_ITEM && !hasUsableNetwork()) {
                 networkWaits++
                 logI("Connection lost. Waiting up to ${NETWORK_WAIT_MS / 1000}s for the network before retrying ${record.id}")
-                showWaitingForNetwork(if (isDownload) position - 1 else run.succeeded, total, isDownload)
+                showWaitingForNetwork(run.succeeded, total, isDownload)
                 if (waitForNetwork(NETWORK_WAIT_MS)) {
                     logI("Network is back, retrying ${record.id}")
                     continue
