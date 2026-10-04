@@ -501,6 +501,19 @@ export default function App() {
   const stackRef = useRef(stack);
   stackRef.current = stack;
 
+  // Test builds only (VITE_TEST_CONTROL=1): let tests/ios drive the app.
+  useEffect(() => {
+    if (import.meta.env.VITE_TEST_CONTROL !== '1') return;
+    window.__fieldbook = {
+      startSync: () => engine.startSync(),
+      refresh: () => engine.refresh(),
+      go: (name) => setStack(name === 'sync'
+        ? [{ name: 'audits' }, { name: 'audit', id: MAIN.id }, { name: 'sync' }]
+        : name === 'audit' ? [{ name: 'audits' }, { name: 'audit', id: MAIN.id }] : [{ name: 'audits' }]),
+      state: () => ({ phase: engine.phase, run: engine.run, queued: engine.queued.length, synced: engine.synced.length, online: engine.online }),
+    };
+  }, [engine]);
+
   useEffect(() => {
     let sub;
     CapApp.addListener('backButton', () => {

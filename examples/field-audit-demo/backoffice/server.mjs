@@ -14,6 +14,10 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFile } from 'node:child_process';
 
+// Optional test API (fault injection, remote control of a test build, extra
+// endpoints). Loaded only with TEST_API=1; see test-api.mjs.
+const testApi = process.env.TEST_API === '1' ? await import('./test-api.mjs') : null;
+
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT || 8791);
 const DATA_DIR = path.join(HERE, 'data');
@@ -132,6 +136,7 @@ async function handleUpload(req, res) {
   const p = body.payload || {};
   if (!p.photoId || !p.findingId || !body.file?.base64Data) return send(res, 422, { error: 'payload.photoId, payload.findingId and file are required' });
   if (!findingIndex[p.findingId]) return send(res, 409, { error: `unknown finding ${p.findingId}` });
+  if (testApi?.applyFault(req, res, p.photoId)) return;
 
   const bin = Buffer.from(body.file.base64Data, 'base64');
   const dir = path.join(DATA_DIR, p.auditId || 'unknown');
@@ -173,6 +178,7 @@ async function handleUpload(req, res) {
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
   try {
+    if (testApi && (await testApi.handleTestApi(req, res, url))) return;
     if (req.method === 'POST' && url.pathname === '/api/v1/audits/photos') return await handleUpload(req, res);
     if (req.method === 'GET' && url.pathname === '/api/state') return send(res, 200, state());
     // The audit as the device holds it, so the page can lay out one slot per expected photo.
@@ -219,5 +225,5 @@ const server = http.createServer(async (req, res) => {
 
 server.requestTimeout = 0;
 server.listen(PORT, () => {
-  console.log(`Backoffice on http://localhost:${PORT} (emulator: http://10.0.2.2:${PORT}), ingest cap ${rateMbps ? rateMbps + ' Mbit/s' : 'off'}`);
+  console.log(`Backoffice on http://localhost:${PORT} (emulator: http://10.0.2.2:${PORT}), ingest cap ${rateMbps ? rateMbps + ' Mbit/s' : 'off'}${testApi ? ', test API on' : ''}`);
 });
