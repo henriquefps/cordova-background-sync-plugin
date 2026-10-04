@@ -6,3 +6,8 @@ backoffice/data/
 app/dist/
 app/android/app/src/main/assets/public/
 video/node_modules/
+app/ios/DerivedData/
+tests/ios/results/
+# The repository root ignores Xcode projects; the demo's iOS project is source.
+!app/ios/App/App.xcodeproj/
+!app/ios/App/App.xcworkspace/
