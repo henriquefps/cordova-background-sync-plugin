@@ -4,6 +4,12 @@ A professional, high-resilience **Background Data & Asset Synchronization Engine
 
 This plugin delegates the synchronization of offline relational records and heavy binary assets (images, PDFs, videos) to the **native operating system layer (Kotlin on Android / Objective-C on iOS)**. It runs outside the WebView (JavaScript runtime), so WebView suspension does not stop it. On Android it keeps going when the app is closed, minimized, or the device is locked. On iOS it runs while the app is in the foreground and for the short background window iOS grants (about 30 seconds), then pauses and resumes when the app returns or calls `sync()`, with nothing lost (see [Technical Limitations](docs/limitations.md#3-ios-background-life-cycle)). The plugin declares no iOS background modes.
 
+### Demo video
+
+[![Demo: 336 photos (418 MB) sync with the app in the background, the screen locked and the network cut. Click to play.](docs/img/background-sync-demo.jpg)](https://media.hfps.dev/showcase/background-sync-demo.mp4)
+
+84 seconds, recorded on the Android emulator with the [example app](examples/field-audit-demo/): 336 photos (418 MB) keep syncing with the app in the background, the screen locked and the app closed, and the queue resumes on its own after airplane mode. [Watch the video (MP4)](https://media.hfps.dev/showcase/background-sync-demo.mp4).
+
 ---
 
 ## 🎯 When is this Plugin Useful?
