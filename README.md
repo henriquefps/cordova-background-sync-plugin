@@ -1,3 +1,5 @@
+<img src="docs/img/icon.svg" alt="" width="96" height="96">
+
 # BackgroundSyncPlugin
 
 A professional, high-resilience **Background Data & Asset Synchronization Engine** designed for hybrid mobile applications (Cordova, Capacitor) using local SQLite/LocalStorage databases.
